@@ -4,8 +4,8 @@ module Kindly.Class where
 
 import Control.Category
 import Data.Kind (Constraint)
-import GHC.Base (Type)
 import Data.Semigroupoid (Semigroupoid (..))
+import GHC.Base (Type)
 
 --------------------------------------------------------------------------------
 
@@ -26,6 +26,7 @@ runNat :: Nat source target f f' -> (forall x. target (f x) (f' x))
 runNat (Nat f) = f
 
 infixr 0 ~>
+
 type (~>) c1 c2 = Nat c1 c2
 
 instance (Semigroupoid c1, Semigroupoid c2) => Semigroupoid (Nat c1 c2) where
@@ -42,3 +43,18 @@ type FunctorOf :: Cat from -> Cat to -> (from -> to) -> Constraint
 class (Functor f, dom ~ Dom f, cod ~ Cod f) => FunctorOf dom cod f
 
 instance (Functor f, dom ~ Dom f, cod ~ Cod f) => FunctorOf dom cod f
+
+--------------------------------------------------------------------------------
+-- NOTE: These these classes go from right to left:
+
+class (FunctorOf cat1 (->) p) => MapArg1 cat1 p | p -> cat1 where
+  map1 :: (a `cat1` b) -> p a -> p b
+  map1 = map
+
+class (FunctorOf cat1 (cat2 ~> (->)) p, forall x. MapArg1 cat2 (p x)) => MapArg2 cat1 cat2 p | p -> cat2 cat2 where
+  map2 :: (a `cat1` b) -> forall x. p a x -> p b x
+  map2 = runNat . map
+
+class (FunctorOf cat1 (cat2 ~> cat3 ~> (->)) p, forall x. MapArg2 cat2 cat3 (p x)) => MapArg3 cat1 cat2 cat3 p | p -> cat1 cat2 cat3 where
+  map3 :: (a `cat1` b) -> forall x y. p a x y -> p b x y
+  map3 f = runNat (runNat (map f))

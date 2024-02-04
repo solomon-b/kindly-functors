@@ -6,6 +6,7 @@ module Kindly.Functor where
 
 import Control.Applicative (Const, WrappedArrow, WrappedMonad, ZipList)
 import Control.Arrow (Arrow, ArrowMonad, Kleisli (..))
+import Control.Category (Category (..))
 import Control.Exception (Handler)
 import Control.Monad qualified as Hask.Monad
 import Control.Monad.ST (ST)
@@ -14,16 +15,19 @@ import Data.Complex (Complex)
 import Data.Either (Either)
 import Data.Functor qualified as Hask
 import Data.Functor.Compose (Compose (..))
+import Data.Functor.Contravariant (Op (..), Predicate)
+import Data.Functor.Contravariant qualified as Hask
 import Data.Functor.Identity (Identity (..))
 import Data.Functor.Product (Product (..))
 import Data.Functor.Sum (Sum (..))
-import Data.Kind (Type)
+import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (Maybe (..))
 import Data.Monoid qualified as Monoid
 import Data.Ord (Down)
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
+import Data.These (These)
 import Data.Tuple (Solo)
 import Foreign (Ptr)
 import GHC.Arr (Array)
@@ -32,9 +36,26 @@ import GHC.Conc (STM)
 import GHC.Exts (Float)
 import GHC.Generics (K1, M1 (..), Par1, Rec1 (..), U1, URec, V1, (:*:) (..), (:+:) (..), (:.:) (..))
 import Kindly.Class
+import Kindly.Iso
 import System.Console.GetOpt (ArgDescr, ArgOrder, OptDescr)
 import Text.ParserCombinators.ReadP (ReadP)
 import Text.ParserCombinators.ReadPrec (ReadPrec)
+
+--------------------------------------------------------------------------------
+
+type Endofunctor :: (Type -> Type -> Type) -> (Type -> Type) -> Constraint
+type Endofunctor cat1 p = (MapArg1 cat1 p)
+
+fmap :: forall cat1 p. (Endofunctor cat1 p) => forall a b. (a `cat1` b) -> p a -> p b
+fmap = map1
+
+-- TODO: Do I keep this around?
+contramap :: (Endofunctor Op p) => (a -> b) -> p b -> p a
+contramap = fmap . Op
+
+-- TODO: Do I keep this around?
+invmap :: (Endofunctor (<->) f) => (a -> b) -> (b -> a) -> f a -> f b
+invmap f g = fmap (Iso f g)
 
 --------------------------------------------------------------------------------
 
@@ -48,10 +69,8 @@ instance (Hask.Functor f) => Functor (FromFunctor f) where
   map :: (a -> b) -> FromFunctor f a -> FromFunctor f b
   map = Hask.fmap
 
-fmap :: (FunctorOf (->) (->) f) => (a -> b) -> f a -> f b
-fmap = map
-
 --------------------------------------------------------------------------------
+-- Covariant Functor instances
 
 deriving via (FromFunctor ZipList) instance Functor ZipList
 
@@ -112,6 +131,8 @@ deriving via (FromFunctor (ArrowMonad a)) instance (Arrow a) => Functor (ArrowMo
 deriving via (FromFunctor (Lazy.ST s)) instance Functor (Lazy.ST s)
 
 deriving via (FromFunctor (Either a)) instance Functor (Either a)
+
+deriving via (FromFunctor (These a)) instance Functor (These a)
 
 deriving via (FromFunctor Proxy) instance Functor (Proxy :: Type -> Type)
 
@@ -225,3 +246,169 @@ deriving via (FromFunctor ((,,,,) a b c d)) instance Functor ((,,,,) a b c d)
 deriving via (FromFunctor ((,,,,,) a b c d e)) instance Functor ((,,,,,) a b c d e)
 
 deriving via (FromFunctor ((,,,,,,) a b c d e f)) instance Functor ((,,,,,,) a b c d e f)
+
+--------------------------------------------------------------------------------
+-- Covariant MapArg1 instances
+
+instance MapArg1 (->) ZipList
+
+instance MapArg1 (->) Handler
+
+instance MapArg1 (->) Complex
+
+instance MapArg1 (->) Identity
+
+instance MapArg1 (->) Monoid.First
+
+instance MapArg1 (->) Monoid.Last
+
+instance MapArg1 (->) Down
+
+instance MapArg1 (->) Semigroup.First
+
+instance MapArg1 (->) Semigroup.Last
+
+instance MapArg1 (->) Semigroup.Max
+
+instance MapArg1 (->) Semigroup.Min
+
+instance MapArg1 (->) Semigroup.Dual
+
+instance MapArg1 (->) Semigroup.Product
+
+instance MapArg1 (->) Semigroup.Sum
+
+instance MapArg1 (->) NonEmpty
+
+instance MapArg1 (->) STM
+
+instance MapArg1 (->) Par1
+
+instance MapArg1 (->) ArgDescr
+
+instance MapArg1 (->) ArgOrder
+
+instance MapArg1 (->) OptDescr
+
+instance MapArg1 (->) ReadP
+
+instance MapArg1 (->) ReadPrec
+
+instance MapArg1 (->) IO
+
+instance MapArg1 (->) Maybe
+
+instance MapArg1 (->) Solo
+
+instance MapArg1 (->) []
+
+instance (Hask.Monad.Monad m) => MapArg1 (->) (WrappedMonad m)
+
+instance (Arrow a) => MapArg1 (->) (ArrowMonad a)
+
+instance MapArg1 (->) (Lazy.ST s)
+
+instance MapArg1 (->) (Either a)
+
+instance MapArg1 (->) (Proxy :: Type -> Type)
+
+instance MapArg1 (->) (Semigroup.Arg a)
+
+instance MapArg1 (->) (Array i)
+
+instance MapArg1 (->) (U1 :: Type -> Type)
+
+instance MapArg1 (->) (V1 :: Type -> Type)
+
+instance MapArg1 (->) (ST s)
+
+instance MapArg1 (->) ((,) a)
+
+instance (Arrow a) => MapArg1 (->) (WrappedArrow a b)
+
+instance (FunctorOf (->) (->) m) => MapArg1 (->) (Kleisli m a)
+
+instance MapArg1 (->) (Const m :: Type -> Type)
+
+instance (FunctorOf (->) (->) f) => MapArg1 (->) (Monoid.Ap f)
+
+instance (FunctorOf (->) (->) f) => MapArg1 (->) (Monoid.Alt f)
+
+instance (FunctorOf (->) (->) f) => MapArg1 (->) (Rec1 f)
+
+instance MapArg1 (->) (URec (Ptr ()) :: Type -> Type)
+
+instance MapArg1 (->) (URec Char :: Type -> Type)
+
+instance MapArg1 (->) (URec Double :: Type -> Type)
+
+instance MapArg1 (->) (URec Float :: Type -> Type)
+
+instance MapArg1 (->) (URec Int :: Type -> Type)
+
+instance MapArg1 (->) (URec Word :: Type -> Type)
+
+instance MapArg1 (->) ((,,) a b)
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (Product f g)
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (Sum f g)
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (f :*: g)
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (f :+: g)
+
+instance MapArg1 (->) (K1 i c :: Type -> Type)
+
+instance MapArg1 (->) ((,,,) a b c)
+
+instance MapArg1 (->) ((->) r)
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (Compose f g)
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (f :.: g)
+
+instance (FunctorOf (->) (->) f) => MapArg1 (->) (M1 i c f)
+
+instance MapArg1 (->) ((,,,,) a b c d)
+
+instance MapArg1 (->) ((,,,,,) a b c d e)
+
+instance MapArg1 (->) ((,,,,,,) a b c d e f)
+
+--------------------------------------------------------------------------------
+
+newtype FromContra f a = FromContra {getContra :: f a}
+  deriving newtype (Hask.Contravariant)
+
+instance (Hask.Contravariant f) => Functor (FromContra f) where
+  type Dom (FromContra f) = Op
+  type Cod (FromContra f) = (->)
+
+  map :: Dom (FromContra f) a b -> Cod (FromContra f) ((FromContra f) a) ((FromContra f) b)
+  map = Hask.contramap . getOp
+
+--------------------------------------------------------------------------------
+-- Contravariant Functor instances
+
+deriving via (FromContra Predicate) instance Functor Predicate
+
+-- TODO: Add remaining Contravariant instances
+
+--------------------------------------------------------------------------------
+-- Contravariant MapArg1 instances
+
+instance MapArg1 Op Predicate
+
+-- TODO: Add remaining Contravariant instances
+
+--------------------------------------------------------------------------------
+
+instance Functor Monoid.Endo where
+  type Dom Monoid.Endo = (<->)
+  type Cod Monoid.Endo = (->)
+
+  map :: (a <-> b) -> Monoid.Endo a -> Monoid.Endo b
+  map Iso {..} (Monoid.Endo f) = Monoid.Endo (fwd . f . bwd)
+
+instance MapArg1 (<->) Monoid.Endo

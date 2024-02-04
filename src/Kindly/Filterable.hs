@@ -31,6 +31,8 @@ catMaybes = map (Hask.Star id)
 filter :: (FunctorOf (Hask.Star Maybe) (->) f) => (a -> Bool) -> f a -> f a
 filter f = map (Hask.Star (\a -> if f a then Just a else Nothing))
 
+--------------------------------------------------------------------------------
+
 -- NOTE: These instances conflict with our Covariant Functor
 -- instances. Switching from associated types to Multi Parameter type
 -- classes would fix this:

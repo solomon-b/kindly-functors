@@ -19,7 +19,7 @@ import Control.Applicative (Const, WrappedArrow, WrappedMonad, ZipList)
 import Control.Arrow (Arrow, ArrowMonad, Kleisli (..))
 import Control.Category (Category (..))
 import Control.Exception (Handler)
-import Control.Monad qualified as Hask.Monad
+import Control.Monad (Monad)
 import Control.Monad.ST (ST)
 import Control.Monad.ST.Lazy qualified as Lazy
 import Data.Complex (Complex)
@@ -36,7 +36,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (Maybe (..))
 import Data.Monoid qualified as Monoid
 import Data.Ord (Down)
-import Data.Profunctor qualified as Hask
+import Data.Profunctor qualified as Hask.Profunctor
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
 import Data.These (These)
@@ -85,7 +85,7 @@ invmap f g = fmap (Iso f g)
 -- TODO: 'Filterable' is currently unusable due to fundeps. This can
 -- be fixed by making it @FunctorOf (Hask.Star Maybe) (->) p@, but I
 -- think we can do better by switching away from associated types.
-type Filterable p = Functor (Hask.Star Maybe) p
+type Filterable p = Functor (Hask.Profunctor.Star Maybe) p
 
 -- | A specialization of 'fmap' for filterable functors as defined
 -- in 'Witherable'
@@ -93,7 +93,7 @@ type Filterable p = Functor (Hask.Star Maybe) p
 -- TODO: Do we keep this around? This is nice to have so that library
 -- users don't have to manually pack functions in 'Hask.Star'.
 mapMaybe :: (Filterable f) => (a -> Maybe b) -> f a -> f b
-mapMaybe f = map (Hask.Star f)
+mapMaybe f = map (Hask.Profunctor.Star f)
 
 -- | The 'catMaybes' function takes a list of 'Maybe's and returns
 -- a list of all the 'Just' values.
@@ -101,7 +101,7 @@ mapMaybe f = map (Hask.Star f)
 -- TODO: Do we keep this around? This is nice to have so that library
 -- users don't have to manually pack functions in 'Hask.Star'.
 catMaybes :: (Filterable f) => f (Maybe a) -> f a
-catMaybes = map (Hask.Star id)
+catMaybes = map (Hask.Profunctor.Star id)
 
 -- | Applied to a predicate and a functor @f a@, returns the those
 -- elements that satisfy the predicate.
@@ -109,7 +109,7 @@ catMaybes = map (Hask.Star id)
 -- TODO: Do we keep this around? This is nice to have so that library
 -- users don't have to manually pack functions in 'Hask.Star'.
 filter :: (Filterable f) => (a -> Bool) -> f a -> f a
-filter f = map (Hask.Star (\a -> if f a then Just a else Nothing))
+filter f = map (Hask.Profunctor.Star (\a -> if f a then Just a else Nothing))
 
 --------------------------------------------------------------------------------
 
@@ -178,7 +178,7 @@ deriving via (FromFunctor Solo) instance CategoricalFunctor Solo
 
 deriving via (FromFunctor []) instance CategoricalFunctor []
 
-deriving via (FromFunctor (WrappedMonad m)) instance (Hask.Monad.Monad m) => CategoricalFunctor (WrappedMonad m)
+deriving via (FromFunctor (WrappedMonad m)) instance (Monad m) => CategoricalFunctor (WrappedMonad m)
 
 deriving via (FromFunctor (ArrowMonad a)) instance (Arrow a) => CategoricalFunctor (ArrowMonad a)
 
@@ -357,7 +357,7 @@ instance MapArg1 (->) Solo
 
 instance MapArg1 (->) []
 
-instance (Hask.Monad.Monad m) => MapArg1 (->) (WrappedMonad m)
+instance (Monad m) => MapArg1 (->) (WrappedMonad m)
 
 instance (Arrow a) => MapArg1 (->) (ArrowMonad a)
 
@@ -474,11 +474,11 @@ newtype FromFilterable f a = FromFilterable (f a)
   deriving newtype (Hask.Functor, Hask.Filterable)
 
 instance (Hask.Filterable f) => CategoricalFunctor (FromFilterable f) where
-  type Dom (FromFilterable f) = (Hask.Star Maybe)
+  type Dom (FromFilterable f) = (Hask.Profunctor.Star Maybe)
   type Cod (FromFilterable f) = (->)
 
-  map :: Hask.Star Maybe a b -> FromFilterable f a -> FromFilterable f b
-  map (Hask.Star f) (FromFilterable fa) = FromFilterable (Hask.mapMaybe f fa)
+  map :: Hask.Profunctor.Star Maybe a b -> FromFilterable f a -> FromFilterable f b
+  map (Hask.Profunctor.Star f) (FromFilterable fa) = FromFilterable (Hask.mapMaybe f fa)
 
 --------------------------------------------------------------------------------
 

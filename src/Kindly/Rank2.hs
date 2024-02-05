@@ -1,27 +1,25 @@
 -- | Work in Progress.
-module Kindly.Rank2 where
+module Kindly.Rank2
+  ( BFunctor,
+    bmap,
+    BFunctor2,
+    bmap2,
+  )
+where
 
 --------------------------------------------------------------------------------
 
-import Data.Bool (Bool (..))
 import Kindly.Class
 
 --------------------------------------------------------------------------------
 
-data MyHKD f = MyHKD {one :: f Bool, two :: f ()}
+type BFunctor b = FunctorOf ((->) ~> (->)) (->) b
 
-instance CategoricalFunctor MyHKD where
-  type Dom MyHKD = (->) ~> (->)
-  type Cod MyHKD = (->)
+bmap :: BFunctor b => forall f g. (forall x. f x -> g x) -> b f -> b g 
+bmap nat = map (Nat nat)
 
-  map :: (Nat (->) (->)) f g -> MyHKD f -> MyHKD g
-  map (Nat nat) MyHKD {..} = MyHKD (nat one) (nat two)
+type BFunctor2 b = FunctorOf ((->) ~> (->) ~> (->)) (->) b
 
-newtype MyHKD2 p = MyHKD2 {field :: p () Bool}
+bmap2 :: BFunctor2 b => forall f g. (forall x x'. f x x' -> g x x') -> b f -> b g 
+bmap2 nat = map (Nat (Nat nat))
 
-instance CategoricalFunctor MyHKD2 where
-  type Dom MyHKD2 = (->) ~> ((->) ~> (->))
-  type Cod MyHKD2 = (->)
-
-  map :: Dom MyHKD2 p q -> MyHKD2 p -> MyHKD2 q
-  map (Nat (Nat nat)) MyHKD2 {..} = MyHKD2 (nat field)

@@ -10,7 +10,7 @@ import Kindly.Class
 
 data MyHKD f = MyHKD {one :: f Bool, two :: f ()}
 
-instance Functor MyHKD where
+instance CategoricalFunctor MyHKD where
   type Dom MyHKD = (->) ~> (->)
   type Cod MyHKD = (->)
 
@@ -19,7 +19,7 @@ instance Functor MyHKD where
 
 newtype MyHKD2 p = MyHKD2 {field :: p () Bool}
 
-instance Functor MyHKD2 where
+instance CategoricalFunctor MyHKD2 where
   type Dom MyHKD2 = (->) ~> ((->) ~> (->))
   type Cod MyHKD2 = (->)
 

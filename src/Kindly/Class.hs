@@ -9,8 +9,8 @@ import GHC.Base (Type)
 
 --------------------------------------------------------------------------------
 
-type Functor :: (from -> to) -> Constraint
-class (Category (Dom f), Category (Cod f)) => Functor (f :: from -> to) where
+type CategoricalFunctor :: (from -> to) -> Constraint
+class (Category (Dom f), Category (Cod f)) => CategoricalFunctor (f :: from -> to) where
   type Dom f :: from -> from -> Type
   type Cod f :: to -> to -> Type
 
@@ -40,9 +40,9 @@ instance (Semigroupoid c1, Semigroupoid c2, Category c1, Category c2) => Categor
   (.) = o
 
 type FunctorOf :: Cat from -> Cat to -> (from -> to) -> Constraint
-class (Functor f, dom ~ Dom f, cod ~ Cod f) => FunctorOf dom cod f
+class (CategoricalFunctor f, dom ~ Dom f, cod ~ Cod f) => FunctorOf dom cod f
 
-instance (Functor f, dom ~ Dom f, cod ~ Cod f) => FunctorOf dom cod f
+instance (CategoricalFunctor f, dom ~ Dom f, cod ~ Cod f) => FunctorOf dom cod f
 
 --------------------------------------------------------------------------------
 -- NOTE: These these classes go from right to left:

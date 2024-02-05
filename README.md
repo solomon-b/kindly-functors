@@ -2,9 +2,8 @@ Kindly Functors
 ===============
 
 🚨 **WORK IN PROGRESS** 🚨
-
-[![kindly-functors::CI](https://github.com/solomon-b/kindly-functors/actions/workflows/nix.yml/badge.svg)](https://github.com/solomon-b/kindly-functors/actions/workflows/nix.yml)
-[![kindly-functors::CI](https://github.com/solomon-b/kindly-functors/actions/workflows/cabal.yml/badge.svg)](https://github.com/solomon-b/kindly-functors/actions/workflows/cabal.yml)
+[![nix:build](https://github.com/solomon-b/kindly-functors/actions/workflows/nix.yml/badge.svg?branch=main)](https://github.com/solomon-b/kindly-functors/actions/workflows/nix.yml)
+[![cabal:build](https://github.com/solomon-b/kindly-functors/actions/workflows/cabal.yml/badge.svg?branch=main)](https://github.com/solomon-b/kindly-functors/actions/workflows/cabal.yml)
 
 
 A category polymorphic `Functor` typeclass based on the work of [IcelandJack](https://www.reddit.com/r/haskell/comments/eoo16m/base_category_polymorphic_functor_and_functorof/?utm_source=reddit&utm_medium=usertext&utm_name=haskell&utm_content=t1_khkwtph) and [Ed Kmett](https://gist.github.com/ekmett/b26363fc0f38777a637d) allowing you to pick out arbitrary kinds and variances for your functors.

@@ -1,5 +1,7 @@
 # Revision history for kindly-functors
 
-## 0.1.0.0 -- YYYY-mm-dd
+## Upcoming
+
+## 0.1.0.0 -- 2024-02-04
 
 * Initial Release.

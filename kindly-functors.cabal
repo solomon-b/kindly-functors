@@ -61,7 +61,6 @@ library
       Kindly.Class
       Kindly.Bifunctor
       Kindly.Functor
-      Kindly.Iso
       Kindly.Rank2
       Kindly.Trifunctor
     build-depends:

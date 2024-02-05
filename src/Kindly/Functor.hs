@@ -31,6 +31,7 @@ import Data.Functor.Contravariant qualified as Hask
 import Data.Functor.Identity (Identity (..))
 import Data.Functor.Product (Product (..))
 import Data.Functor.Sum (Sum (..))
+import Data.Isomorphism
 import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (Maybe (..))
@@ -48,7 +49,6 @@ import GHC.Conc (STM)
 import GHC.Exts (Float)
 import GHC.Generics (K1, M1 (..), Par1, Rec1 (..), U1, URec, V1, (:*:) (..), (:+:) (..), (:.:) (..))
 import Kindly.Class
-import Kindly.Iso
 import System.Console.GetOpt (ArgDescr, ArgOrder, OptDescr)
 import Text.ParserCombinators.ReadP (ReadP)
 import Text.ParserCombinators.ReadPrec (ReadPrec)
@@ -79,7 +79,7 @@ contramap = fmap . Op
 --
 -- TODO: Do we keep this around? This is nice to have so that library
 -- users don't have to manually pack functions in 'Iso'.
-invmap :: (Functor (<->) f) => (a -> b) -> (b -> a) -> f a -> f b
+invmap :: (Functor (Iso (->)) f) => (a -> b) -> (b -> a) -> f a -> f b
 invmap f g = fmap (Iso f g)
 
 -- TODO: 'Filterable' is currently unusable due to fundeps. This can
@@ -460,13 +460,13 @@ instance MapArg1 Op Predicate
 --------------------------------------------------------------------------------
 
 instance CategoricalFunctor Monoid.Endo where
-  type Dom Monoid.Endo = (<->)
+  type Dom Monoid.Endo = Iso (->)
   type Cod Monoid.Endo = (->)
 
-  map :: (a <-> b) -> Monoid.Endo a -> Monoid.Endo b
-  map Iso {..} (Monoid.Endo f) = Monoid.Endo (fwd . f . bwd)
+  map :: Iso (->) a b -> Monoid.Endo a -> Monoid.Endo b
+  map Iso {..} (Monoid.Endo f) = Monoid.Endo (embed . f . project)
 
-instance MapArg1 (<->) Monoid.Endo
+instance MapArg1 (Iso (->)) Monoid.Endo
 
 --------------------------------------------------------------------------------
 

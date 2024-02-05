@@ -40,6 +40,9 @@ import Kindly.Iso
 import System.Console.GetOpt (ArgDescr, ArgOrder, OptDescr)
 import Text.ParserCombinators.ReadP (ReadP)
 import Text.ParserCombinators.ReadPrec (ReadPrec)
+import Witherable qualified as Hask
+import Data.Profunctor qualified as Hask
+import Prelude (Bool)
 
 --------------------------------------------------------------------------------
 
@@ -56,6 +59,17 @@ contramap = fmap . Op
 -- TODO: Do I keep this around?
 invmap :: (Functor (<->) f) => (a -> b) -> (b -> a) -> f a -> f b
 invmap f g = fmap (Iso f g)
+
+type Filterable p = Functor (Hask.Star Maybe) p
+
+mapMaybe :: (Filterable f) => (a -> Maybe b) -> f a -> f b
+mapMaybe f = map (Hask.Star f)
+
+catMaybes :: (Filterable f) => f (Maybe a) -> f a
+catMaybes = map (Hask.Star id)
+
+filter :: (Filterable f) => (a -> Bool) -> f a -> f a
+filter f = map (Hask.Star (\a -> if f a then Just a else Nothing))
 
 --------------------------------------------------------------------------------
 
@@ -412,3 +426,25 @@ instance CategoricalFunctor Monoid.Endo where
   map Iso {..} (Monoid.Endo f) = Monoid.Endo (fwd . f . bwd)
 
 instance MapArg1 (<->) Monoid.Endo
+
+--------------------------------------------------------------------------------
+
+newtype FromFilterable f a = FromFilterable (f a)
+  deriving newtype (Hask.Functor, Hask.Filterable)
+
+instance (Hask.Filterable f) => CategoricalFunctor (FromFilterable f) where
+  type Dom (FromFilterable f) = (Hask.Star Maybe)
+  type Cod (FromFilterable f) = (->)
+
+  map :: Hask.Star Maybe a b -> FromFilterable f a -> FromFilterable f b
+  map (Hask.Star f) (FromFilterable fa) = FromFilterable (Hask.mapMaybe f fa)
+
+--------------------------------------------------------------------------------
+
+-- NOTE: These instances conflict with our Covariant Functor
+-- instances. Switching from associated types to Multi Parameter type
+-- classes would fix this:
+
+-- deriving via (FromFilterable []) instance Functor []
+
+-- deriving via (FromFilterable Maybe) instance Functor Maybe

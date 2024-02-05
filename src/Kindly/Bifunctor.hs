@@ -1,7 +1,14 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Kindly.Bifunctor where
+-- | Two Parameter Functors of arbitrary categories.
+module Kindly.Bifunctor
+  ( Bifunctor,
+    bimap,
+    lmap,
+    rmap,
+  )
+where
 
 --------------------------------------------------------------------------------
 
@@ -22,16 +29,22 @@ import Kindly.Functor ()
 
 --------------------------------------------------------------------------------
 
+-- | A 'CategoricalFunctor' of kind @Type -> Type@ mapping from an
+-- arbitrary category @cat1@ to a functor category @cat2 ~> (->)@.
 type Bifunctor :: (Type -> Type -> Type) -> (Type -> Type -> Type) -> (Type -> Type -> Type) -> Constraint
-type Bifunctor cat2 cat1 p = (MapArg2 cat2 cat1 p, forall x. MapArg1 cat1 (p x))
+type Bifunctor cat1 cat2 p = (MapArg2 cat1 cat2 p, forall x. MapArg1 cat2 (p x))
 
-bimap :: forall cat2 cat1 p. (Bifunctor cat2 cat1 p) => forall a b a' b'. (a `cat2` a') -> (b `cat1` b') -> p a b -> p a' b'
+-- | Lift a morphism @cat1 a a'@ and a morphism @cat2 b b'@ into a
+-- function @p a b -> p a' b'@.
+bimap :: forall cat1 cat2 p. (Bifunctor cat1 cat2 p) => forall a b a' b'. (a `cat1` a') -> (b `cat2` b') -> p a b -> p a' b'
 bimap f g = map2 f . map1 g
 
-lmap :: (Category cat1, Bifunctor cat2 cat1 p) => (a `cat2` b) -> p a x -> p b x
+-- | Lift a morphism @cat1 a b@ into a function @p a x -> p b x@.
+lmap :: (Category cat2, Bifunctor cat1 cat2 p) => (a `cat1` b) -> p a x -> p b x
 lmap = flip bimap id
 
-rmap :: (Bifunctor cat2 cat1 p) => (a `cat1` b) -> p x a -> p x b
+-- | Lift a morphism @cat2 a b@ into a function @p x a -> p x b@.
+rmap :: (Bifunctor cat1 cat2 p) => (a `cat2` b) -> p x a -> p x b
 rmap = bimap id
 
 --------------------------------------------------------------------------------

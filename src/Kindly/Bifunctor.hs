@@ -13,15 +13,15 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Category
-import Control.Monad qualified as Hask
 import Data.Bifunctor qualified as Hask
 import Data.Either (Either)
 import Data.Function (flip)
+import Data.Functor qualified as Hask
 import Data.Functor.Const (Const)
 import Data.Functor.Contravariant (Op (..))
 import Data.Kind (Constraint, Type)
 import Data.Profunctor qualified as Hask
-import Data.Semigroup (Arg)
+import Data.Semigroup qualified as Semigroup
 import Data.These (These)
 import GHC.Generics (K1)
 import Kindly.Class
@@ -85,7 +85,7 @@ deriving via (FromBifunctor Either) instance CategoricalFunctor Either
 
 deriving via (FromBifunctor These) instance CategoricalFunctor These
 
-deriving via (FromBifunctor Arg) instance CategoricalFunctor Arg
+deriving via (FromBifunctor Semigroup.Arg) instance CategoricalFunctor Semigroup.Arg
 
 deriving via (FromBifunctor (Const :: Type -> Type -> Type)) instance CategoricalFunctor (Const :: Type -> Type -> Type)
 
@@ -110,7 +110,7 @@ instance MapArg2 (->) (->) Either
 
 -- instance MapArg2 (->) (->) These
 
-instance MapArg2 (->) (->) Arg
+instance MapArg2 (->) (->) Semigroup.Arg
 
 instance MapArg2 (->) (->) (Const :: Type -> Type -> Type)
 

@@ -6,24 +6,15 @@
 module Kindly.Trifunctor
   ( Trifunctor,
     trimap,
-    MealyM (..),
   )
 where
 
 --------------------------------------------------------------------------------
 
-import Control.Applicative qualified as Hask
 import Control.Category
-import Control.Monad qualified as Hask
-import Control.Monad.Reader qualified as Hask
-import Control.Monad.State qualified as Hask
-import Data.Function (($))
-import Data.Functor.Contravariant (Op (..))
 import Data.Kind (Constraint, Type)
 import Kindly.Bifunctor ()
 import Kindly.Class
-import Kindly.Functor
-import Kindly.Iso
 
 --------------------------------------------------------------------------------
 
@@ -81,32 +72,3 @@ instance MapArg3 (->) (->) (->) ((,,,,) x x')
 instance MapArg3 (->) (->) (->) ((,,,,,) x x' x'')
 
 instance MapArg3 (->) (->) (->) ((,,,,,,) x x' x'' x''')
-
---------------------------------------------------------------------------------
-
-newtype MealyM m s i o = MealyM {runMealyM :: s -> i -> m (o, s)}
-  deriving
-    (Hask.Functor, Hask.Applicative, Hask.Monad)
-    via Hask.StateT s (Hask.ReaderT i m)
-
-deriving via (FromFunctor (MealyM m s i)) instance (Hask.Functor m) => Functor (MealyM m s i)
-
-instance (FunctorOf (->) (->) m) => Functor (MealyM m) where
-  type Dom (MealyM m) = (<->)
-  type Cod (MealyM m) = Nat Op ((->) ~> (->))
-
-  map :: (a <-> b) -> Nat Op ((->) ~> (->)) (MealyM m a) (MealyM m b)
-  map Iso {..} = Nat $ Nat $ \(MealyM mealy) -> MealyM $ \s i -> map (map fwd) $ mealy (bwd s) i
-
-instance Functor (MealyM m s) where
-  type Dom (MealyM m s) = Op
-  type Cod (MealyM m s) = (->) ~> (->)
-
-  map :: Op a b -> Nat (->) (->) (MealyM m s a) (MealyM m s b)
-  map (Op f) = Nat $ \(MealyM mealy) -> MealyM $ \s -> mealy s . f
-
-instance (Hask.Functor m) => MapArg1 (->) (MealyM m s i)
-
--- instance MapArg2 Op (->) (MealyM m s)
-
-instance (FunctorOf (->) (->) m) => MapArg3 (<->) Op (->) (MealyM m)

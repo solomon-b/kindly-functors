@@ -39,14 +39,14 @@ rmap = bimap id
 newtype FromBifunctor f a b = FromBifunctor (f a b)
   deriving newtype (Hask.Functor, Hask.Bifunctor)
 
-instance (Hask.Bifunctor p, FunctorOf (->) (->) (p x)) => Functor (FromBifunctor p x) where
+instance (Hask.Bifunctor p, FunctorOf (->) (->) (p x)) => CategoricalFunctor (FromBifunctor p x) where
   type Dom (FromBifunctor p x) = (->)
   type Cod (FromBifunctor p x) = (->)
 
   map :: (a -> b) -> FromBifunctor p x a -> FromBifunctor p x b
   map f (FromBifunctor pab) = FromBifunctor (map f pab)
 
-instance (Hask.Bifunctor p, forall x. FunctorOf (->) (->) (p x)) => Functor (FromBifunctor p) where
+instance (Hask.Bifunctor p, forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (FromBifunctor p) where
   type Dom (FromBifunctor p) = (->)
   type Cod (FromBifunctor p) = (->) ~> (->)
 
@@ -56,27 +56,27 @@ instance (Hask.Bifunctor p, forall x. FunctorOf (->) (->) (p x)) => Functor (Fro
 --------------------------------------------------------------------------------
 -- Covariant (Bi)Functor instances
 
-deriving via (FromBifunctor (,)) instance Functor (,)
+deriving via (FromBifunctor (,)) instance CategoricalFunctor (,)
 
-deriving via (FromBifunctor ((,,) a)) instance Functor ((,,) a)
+deriving via (FromBifunctor ((,,) a)) instance CategoricalFunctor ((,,) a)
 
-deriving via (FromBifunctor ((,,,) a b)) instance Functor ((,,,) a b)
+deriving via (FromBifunctor ((,,,) a b)) instance CategoricalFunctor ((,,,) a b)
 
-deriving via (FromBifunctor ((,,,,) a b c)) instance Functor ((,,,,) a b c)
+deriving via (FromBifunctor ((,,,,) a b c)) instance CategoricalFunctor ((,,,,) a b c)
 
-deriving via (FromBifunctor ((,,,,,) a b c d)) instance Functor ((,,,,,) a b c d)
+deriving via (FromBifunctor ((,,,,,) a b c d)) instance CategoricalFunctor ((,,,,,) a b c d)
 
-deriving via (FromBifunctor ((,,,,,,) a b c d e)) instance Functor ((,,,,,,) a b c d e)
+deriving via (FromBifunctor ((,,,,,,) a b c d e)) instance CategoricalFunctor ((,,,,,,) a b c d e)
 
-deriving via (FromBifunctor Either) instance Functor Either
+deriving via (FromBifunctor Either) instance CategoricalFunctor Either
 
-deriving via (FromBifunctor These) instance Functor These
+deriving via (FromBifunctor These) instance CategoricalFunctor These
 
-deriving via (FromBifunctor Arg) instance Functor Arg
+deriving via (FromBifunctor Arg) instance CategoricalFunctor Arg
 
-deriving via (FromBifunctor (Const :: Type -> Type -> Type)) instance Functor (Const :: Type -> Type -> Type)
+deriving via (FromBifunctor (Const :: Type -> Type -> Type)) instance CategoricalFunctor (Const :: Type -> Type -> Type)
 
-deriving via (FromBifunctor (K1 i :: Type -> Type -> Type)) instance Functor (K1 i :: Type -> Type -> Type)
+deriving via (FromBifunctor (K1 i :: Type -> Type -> Type)) instance CategoricalFunctor (K1 i :: Type -> Type -> Type)
 
 --------------------------------------------------------------------------------
 -- Covariant MapArg2 instances
@@ -108,14 +108,14 @@ instance MapArg2 (->) (->) (K1 i :: Type -> Type -> Type)
 newtype FromProfunctor f a b = FromProfunctor (f a b)
   deriving newtype (Hask.Functor, Hask.Profunctor)
 
-instance (Hask.Profunctor p, FunctorOf (->) (->) (p x)) => Functor (FromProfunctor p x) where
+instance (Hask.Profunctor p, FunctorOf (->) (->) (p x)) => CategoricalFunctor (FromProfunctor p x) where
   type Dom (FromProfunctor p x) = (->)
   type Cod (FromProfunctor p x) = (->)
 
   map :: (a -> b) -> Cod (FromProfunctor p x) (FromProfunctor p x a) (FromProfunctor p x b)
   map f (FromProfunctor pxa) = FromProfunctor (map f pxa)
 
-instance (Hask.Profunctor p) => Functor (FromProfunctor p) where
+instance (Hask.Profunctor p) => CategoricalFunctor (FromProfunctor p) where
   type Dom (FromProfunctor p) = Op
   type Cod (FromProfunctor p) = (->) ~> (->)
 
@@ -125,7 +125,7 @@ instance (Hask.Profunctor p) => Functor (FromProfunctor p) where
 --------------------------------------------------------------------------------
 -- Profunctorial Functor instances
 
-deriving via (FromProfunctor (->)) instance Functor (->)
+deriving via (FromProfunctor (->)) instance CategoricalFunctor (->)
 
 -- TODO: Add remaining Profunctor instances
 

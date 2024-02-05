@@ -15,7 +15,7 @@ import Witherable qualified as Hask
 newtype FromFilterable f a = FromFilterable (f a)
   deriving newtype (Hask.Functor, Hask.Filterable)
 
-instance (Hask.Filterable f) => Functor (FromFilterable f) where
+instance (Hask.Filterable f) => CategoricalFunctor (FromFilterable f) where
   type Dom (FromFilterable f) = (Hask.Star Maybe)
   type Cod (FromFilterable f) = (->)
 

@@ -60,7 +60,6 @@ library
       Kindly
       Kindly.Class
       Kindly.Bifunctor
-      Kindly.Filterable
       Kindly.Functor
       Kindly.Iso
       Kindly.Rank2

@@ -1,6 +1,17 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Kindly.Functor where
+-- | Single Parameter Functors of arbitrary categories.
+module Kindly.Functor
+  ( Functor,
+    fmap,
+    contramap,
+    invmap,
+    Filterable,
+    mapMaybe,
+    catMaybes,
+    filter,
+  )
+where
 
 --------------------------------------------------------------------------------
 
@@ -25,6 +36,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (Maybe (..))
 import Data.Monoid qualified as Monoid
 import Data.Ord (Down)
+import Data.Profunctor qualified as Hask
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
 import Data.These (These)
@@ -41,33 +53,61 @@ import System.Console.GetOpt (ArgDescr, ArgOrder, OptDescr)
 import Text.ParserCombinators.ReadP (ReadP)
 import Text.ParserCombinators.ReadPrec (ReadPrec)
 import Witherable qualified as Hask
-import Data.Profunctor qualified as Hask
 import Prelude (Bool)
 
 --------------------------------------------------------------------------------
 
+-- | A 'CategoricalFunctor' of kind @Type -> Type@ mapping from an
+-- arbitrary category @cat@ to @->@.
 type Functor :: (Type -> Type -> Type) -> (Type -> Type) -> Constraint
-type Functor cat1 p = (MapArg1 cat1 p)
+type Functor cat p = (MapArg1 cat p)
 
-fmap :: forall cat1 p. (Functor cat1 p) => forall a b. (a `cat1` b) -> p a -> p b
+-- | Lift a function @cat a b@ into a function @f a -> f b@.
+fmap :: forall cat f. (Functor cat f) => forall a b. (a `cat` b) -> f a -> f b
 fmap = map1
 
--- TODO: Do I keep this around?
+-- | A specialization of 'fmap' for contravariant functors as defined
+-- in 'Data.Functor.Contravariant.'
+--
+-- TODO: Do we keep this around? This is nice to have so that library
+-- users don't have to manually pack functions in 'Op'.
 contramap :: (Functor Op p) => (a -> b) -> p b -> p a
 contramap = fmap . Op
 
--- TODO: Do I keep this around?
+-- | A specialization of 'fmap' for invariant functors as defined
+-- in 'Data.Functor.Invariant.'
+--
+-- TODO: Do we keep this around? This is nice to have so that library
+-- users don't have to manually pack functions in 'Iso'.
 invmap :: (Functor (<->) f) => (a -> b) -> (b -> a) -> f a -> f b
 invmap f g = fmap (Iso f g)
 
+-- TODO: 'Filterable' is currently unusable due to fundeps. This can
+-- be fixed by making it @FunctorOf (Hask.Star Maybe) (->) p@, but I
+-- think we can do better by switching away from associated types.
 type Filterable p = Functor (Hask.Star Maybe) p
 
+-- | A specialization of 'fmap' for filterable functors as defined
+-- in 'Witherable'
+--
+-- TODO: Do we keep this around? This is nice to have so that library
+-- users don't have to manually pack functions in 'Hask.Star'.
 mapMaybe :: (Filterable f) => (a -> Maybe b) -> f a -> f b
 mapMaybe f = map (Hask.Star f)
 
+-- | The 'catMaybes' function takes a list of 'Maybe's and returns
+-- a list of all the 'Just' values.
+--
+-- TODO: Do we keep this around? This is nice to have so that library
+-- users don't have to manually pack functions in 'Hask.Star'.
 catMaybes :: (Filterable f) => f (Maybe a) -> f a
 catMaybes = map (Hask.Star id)
 
+-- | Applied to a predicate and a functor @f a@, returns the those
+-- elements that satisfy the predicate.
+--
+-- TODO: Do we keep this around? This is nice to have so that library
+-- users don't have to manually pack functions in 'Hask.Star'.
 filter :: (Filterable f) => (a -> Bool) -> f a -> f a
 filter f = map (Hask.Star (\a -> if f a then Just a else Nothing))
 
@@ -164,6 +204,7 @@ deriving via (FromFunctor ((,) a)) instance CategoricalFunctor ((,) a)
 
 deriving via (FromFunctor (WrappedArrow a b)) instance (Arrow a) => CategoricalFunctor (WrappedArrow a b)
 
+-- TODO: Figure out if these instances be written with Deriving Via.
 instance (FunctorOf (->) (->) m) => CategoricalFunctor (Kleisli m a) where
   type Dom (Kleisli m a) = (->)
   type Cod (Kleisli m a) = (->)
@@ -392,7 +433,7 @@ instance MapArg1 (->) ((,,,,,,) a b c d e f)
 
 --------------------------------------------------------------------------------
 
-newtype FromContra f a = FromContra {getContra :: f a}
+newtype FromContra f a = FromContra (f a)
   deriving newtype (Hask.Contravariant)
 
 instance (Hask.Contravariant f) => CategoricalFunctor (FromContra f) where

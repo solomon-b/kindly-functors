@@ -1,8 +1,7 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
--- | Work in progress. Provides an example that is fully Contravariant
--- and one that is Inv, Contra, and Co.
+-- | Three Parameter Functors of arbitrary varience.
 module Kindly.Trifunctor
   ( Trifunctor,
     trimap,
@@ -18,9 +17,12 @@ import Kindly.Class
 
 --------------------------------------------------------------------------------
 
+-- | A 'CategoricalFunctor' of kind @Type -> Type -> Type@ mapping from an
+-- arbitrary category @cat1@ to a functor category @cat2 ~> cat3 ~> (->)@.
 type Trifunctor :: (Type -> Type -> Type) -> (Type -> Type -> Type) -> (Type -> Type -> Type) -> (Type -> Type -> Type -> Type) -> Constraint
 type Trifunctor cat1 cat2 cat3 p = (MapArg3 cat3 cat2 cat1 p, forall x. MapArg2 cat2 cat1 (p x), forall x y. MapArg1 cat1 (p x y))
 
+-- | Lift a morphism @cat1 a a'@, a morphism @cat2 b b'@, and a morphism @cat3 c c'@ into a -- function @p a b c -> p a' b' c'@.
 trimap :: forall cat1 cat2 cat3 p. (Trifunctor cat1 cat2 cat3 p) => forall a b c a' b' c'. (a `cat3` a') -> (b `cat2` b') -> (c `cat1` c') -> p a b c -> p a' b' c'
 trimap f g h = map3 f . map2 @_ @cat1 g . map1 h
 

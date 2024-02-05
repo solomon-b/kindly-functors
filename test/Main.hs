@@ -1,5 +1,6 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE TypeApplications #-}
+
 module Main (main) where
 
 --------------------------------------------------------------------------------

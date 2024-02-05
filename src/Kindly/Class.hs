@@ -9,20 +9,33 @@ import GHC.Base (Type)
 
 --------------------------------------------------------------------------------
 
+-- | A functor @f@ between categories @from@ and @to@ sends objects in
+-- @Dom f@ to objects in @Cod f@ and morphisms in @Dom f@ to
+-- morphisms in @Dom f@.
+--
+-- === Laws
+--
+-- [Identity]    @'map' 'id' == 'id'@
+-- [Composition] @'map' (f . g) == 'map' f . 'map' g@
 type CategoricalFunctor :: (from -> to) -> Constraint
 class (Category (Dom f), Category (Cod f)) => CategoricalFunctor (f :: from -> to) where
+  -- | @Dom f@ is the source category for the functor @f@.
   type Dom f :: from -> from -> Type
+
+  -- | @Cod f@ is the target category for the functor @f@.
   type Cod f :: to -> to -> Type
 
+  -- | Lift a function of type @Dom f a b@ into a function of type @Cod f (f a) (f b)@.
   map :: Dom f a b -> Cod f (f a) (f b)
 
 type Cat i = i -> i -> Type
 
+-- | A Natural Transformation betweeen two functors @f@ and @g@.
 type Nat :: Cat s -> Cat t -> Cat (s -> t)
-newtype Nat source target f f' where
-  Nat :: (forall x. target (f x) (f' x)) -> Nat source target f f'
+newtype Nat source target f g where
+  Nat :: (forall x. target (f x) (g x)) -> Nat source target f g
 
-runNat :: Nat source target f f' -> (forall x. target (f x) (f' x))
+runNat :: Nat source target f g -> (forall x. target (f x) (g x))
 runNat (Nat f) = f
 
 infixr 0 ~>

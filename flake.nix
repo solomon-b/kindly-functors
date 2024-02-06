@@ -10,13 +10,22 @@
     let
       ghcVersion = "963";
       compiler = "ghc${ghcVersion}";
-      overlay = import ./overlay.nix compiler;
-      overlays = [ overlay ];
     in
     flake-utils.lib.eachDefaultSystem
       (system:
         let
-          pkgs = import nixpkgs { inherit system overlays; };
+          pkgs = import nixpkgs { inherit system; };
+          hsPkgs = pkgs.haskell.packages.${compiler}.override (old: {
+            overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: { }))
+              (hfinal: hprev: {
+                kindly-functors = (hfinal.callCabal2nix "kindly-functors" ./. { }).overrideScope (hfinal': hprev': {
+                  bifunctors = hfinal.bifunctors_5_6_1;
+                  semigroupoids = hfinal.semigroupoids_6_0_0_1.overrideScope (hfinal': hprev': {
+                    bifunctors = hfinal.bifunctors_5_6_1;
+                  });
+                });
+              });
+          });
         in
         rec {
           devShell = pkgs.mkShell {
@@ -31,11 +40,9 @@
 
           formatter = pkgs.nixpkgs-fmt;
           packages = flake-utils.lib.flattenTree {
-            kindly-functors = pkgs.haskellPackages.kindly-functors;
+            kindly-functors = hsPkgs.kindly-functors;
           };
 
           defaultPackage = packages.kindly-functors;
-        }) // {
-      overlays.default = overlay;
-    };
+        });
 }

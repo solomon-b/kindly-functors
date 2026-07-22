@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Kindly.Class where
 
 --------------------------------------------------------------------------------
@@ -5,6 +7,12 @@ module Kindly.Class where
 import Control.Category
 import Data.Kind (Constraint)
 import Data.Semigroupoid (Semigroupoid (..))
+#if MIN_VERSION_base(4,17,0)
+-- On GHC 9.4+ (@base >= 4.17@) @~@ is an ordinary type operator rather than
+-- built-in syntax, so under @NoImplicitPrelude@ it must be brought into scope.
+-- Earlier GHCs still treat @~@ as built-in syntax and do not export it.
+import Data.Type.Equality (type (~))
+#endif
 import GHC.Base (Type)
 
 --------------------------------------------------------------------------------

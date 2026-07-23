@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Kindly.Class where
 
 --------------------------------------------------------------------------------
@@ -5,6 +7,12 @@ module Kindly.Class where
 import Control.Category
 import Data.Kind (Constraint)
 import Data.Semigroupoid (Semigroupoid (..))
+#if MIN_VERSION_base(4,17,0)
+-- On GHC 9.4+ (@base >= 4.17@) @~@ is an ordinary type operator rather than
+-- built-in syntax, so under @NoImplicitPrelude@ it must be brought into scope.
+-- Earlier GHCs still treat @~@ as built-in syntax and do not export it.
+import Data.Type.Equality (type (~))
+#endif
 import GHC.Base (Type)
 
 --------------------------------------------------------------------------------
@@ -66,8 +74,8 @@ class (FunctorOf cat1 (->) p) => MapArg1 cat1 p | p -> cat1 where
 
 class (FunctorOf cat1 (cat2 ~> (->)) p, forall x. MapArg1 cat2 (p x)) => MapArg2 cat1 cat2 p | p -> cat2 cat2 where
   map2 :: (a `cat1` b) -> forall x. p a x -> p b x
-  map2 = runNat . map
+  map2 f = runNat (map @_ @_ @p f)
 
 class (FunctorOf cat1 (cat2 ~> cat3 ~> (->)) p, forall x. MapArg2 cat2 cat3 (p x)) => MapArg3 cat1 cat2 cat3 p | p -> cat1 cat2 cat3 where
   map3 :: (a `cat1` b) -> forall x y. p a x y -> p b x y
-  map3 f = runNat (runNat (map f))
+  map3 f = runNat (runNat (map @_ @_ @p f))

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Single Parameter Functors of arbitrary categories.
@@ -41,7 +42,9 @@ import Data.Profunctor qualified as Hask.Profunctor
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
 import Data.These (These)
+#if MIN_VERSION_base(4,16,0)
 import Data.Tuple (Solo)
+#endif
 import Foreign (Ptr)
 import GHC.Arr (Array)
 import GHC.Base (Char, Double, IO, Int, Word, ($))
@@ -70,7 +73,7 @@ fmap = map1
 -- in 'Data.Functor.Contravariant.'
 --
 -- TODO: Do we keep this around? This is nice to have so that library
--- users don't have to manually pack functions in 'Op'.
+-- users don't have to manually pack functions in t'Op'.
 contramap :: (Functor Op p) => (a -> b) -> p b -> p a
 contramap = fmap . Op
 
@@ -78,7 +81,7 @@ contramap = fmap . Op
 -- in 'Data.Functor.Invariant.'
 --
 -- TODO: Do we keep this around? This is nice to have so that library
--- users don't have to manually pack functions in 'Iso'.
+-- users don't have to manually pack functions in t'Iso'.
 invmap :: (Functor (Iso (->)) f) => (a -> b) -> (b -> a) -> f a -> f b
 invmap f g = fmap (Iso f g)
 
@@ -88,7 +91,7 @@ invmap f g = fmap (Iso f g)
 type Filterable p = Functor (Hask.Profunctor.Star Maybe) p
 
 -- | A specialization of 'fmap' for filterable functors as defined
--- in 'Witherable'
+-- in "Witherable"
 --
 -- TODO: Do we keep this around? This is nice to have so that library
 -- users don't have to manually pack functions in 'Hask.Star'.
@@ -174,7 +177,9 @@ deriving via (FromFunctor IO) instance CategoricalFunctor IO
 
 deriving via (FromFunctor Maybe) instance CategoricalFunctor Maybe
 
+#if MIN_VERSION_base(4,16,0)
 deriving via (FromFunctor Solo) instance CategoricalFunctor Solo
+#endif
 
 deriving via (FromFunctor []) instance CategoricalFunctor []
 
@@ -353,7 +358,9 @@ instance MapArg1 (->) IO
 
 instance MapArg1 (->) Maybe
 
+#if MIN_VERSION_base(4,16,0)
 instance MapArg1 (->) Solo
+#endif
 
 instance MapArg1 (->) []
 

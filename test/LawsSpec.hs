@@ -62,6 +62,7 @@ import Kindly.Functor.Laws
     contravariantFunctorLaws,
     functorLaws,
     invariantFunctorLaws,
+    observedBifunctorLaws,
     profunctorLaws,
   )
 import Prelude
@@ -448,5 +449,7 @@ tests =
           labeled "FreeMapping (->)" (profunctorLaws genFreeMapping obsFreeMapping),
           labeled "CofreeMapping (->)" (profunctorLaws genCofreeMapping obsCofreeMapping),
           labeled "Tagged ()" (functorLaws genTagged),
-          labeled "Tagged" (profunctorLaws genTaggedP obsTaggedP)
+          labeled "Tagged" (profunctorLaws genTaggedP obsTaggedP),
+          -- Op as a bifunctor into Op: covariant map2, contravariant map1.
+          labeled "Op" (observedBifunctorLaws genOp obsOp)
         ]

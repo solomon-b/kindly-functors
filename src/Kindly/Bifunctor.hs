@@ -336,3 +336,15 @@ instance CategoricalFunctor (Tagged :: Type -> Type -> Type) where
   type Cod Tagged = (->) ~> (->)
 
   map _ = Nat (\(Tagged b) -> Tagged b)
+
+--------------------------------------------------------------------------------
+-- Bifunctors into a non-(->) inner category
+
+-- | t'Op' is covariant in its first (result) argument, with contravariant
+-- partial applications: @'Bifunctor' (->) 'Op' 'Op'@ holds, which neither
+-- 'Hask.Bifunctor' nor 'Hask.Profunctor' can express.
+instance CategoricalFunctor Op where
+  type Dom Op = (->)
+  type Cod Op = Op ~> (->)
+
+  map f = Nat (\(Op g) -> Op (f . g))

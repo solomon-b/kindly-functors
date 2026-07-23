@@ -36,6 +36,11 @@
   `Kindly.Functor`. This completes coverage of the `profunctors` package.
 * Add instances for `Tagged` (new `tagged` dependency): covariant in its last
   argument, profunctorial (phantom) in its first.
+* Add a kindly-native bifunctor instance for `Op` itself — covariant in its
+  first (result) argument with contravariant partial applications, so
+  `Bifunctor (->) Op Op` holds. Neither Hask `Bifunctor` nor `Profunctor` can
+  express this shape. An `observedBifunctorLaws` bundle joins the laws
+  sublibrary for such function-shaped covariant `map2` instances.
 
 ## 0.1.0.1 -- 2024-02-04
 

@@ -36,6 +36,7 @@ module Kindly.Functor.Laws
 
     -- * Covariant bifunctors
     bifunctorLaws,
+    observedBifunctorLaws,
 
     -- * Profunctors
     profunctorLaws,
@@ -235,6 +236,46 @@ bifunctorComposition genP = property $ do
   let g = (+ 1) :: Int -> Int
       h = (* 2) :: Int -> Int
   map2 (g . h) p === map2 g (map2 h p)
+
+-- | The functor laws for a covariant @'map2'@ whose inner category is not
+-- @('->')@ (e.g. t'Op', where @'MapArg2' ('->') 'Op' 'Op'@ holds), observed
+-- through @obs@ since such bifunctors are function-shaped.
+observedBifunctorLaws ::
+  forall cat2 p r.
+  (MapArg2 (->) cat2 p, Eq r, Show r) =>
+  Gen (p Int Int) ->
+  (p Int Int -> Int -> r) ->
+  Laws
+observedBifunctorLaws genP obs =
+  Laws
+    "Bifunctor (observed)"
+    [ ("map2 Identity", observedBifunctorIdentity genP obs),
+      ("map2 Composition", observedBifunctorComposition genP obs)
+    ]
+
+observedBifunctorIdentity ::
+  forall cat2 p r.
+  (MapArg2 (->) cat2 p, Eq r, Show r) =>
+  Gen (p Int Int) ->
+  (p Int Int -> Int -> r) ->
+  Property
+observedBifunctorIdentity genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  obs (map2 (id :: Int -> Int) p) a === obs p a
+
+observedBifunctorComposition ::
+  forall cat2 p r.
+  (MapArg2 (->) cat2 p, Eq r, Show r) =>
+  Gen (p Int Int) ->
+  (p Int Int -> Int -> r) ->
+  Property
+observedBifunctorComposition genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  let g = (+ 1) :: Int -> Int
+      h = (* 2) :: Int -> Int
+  obs (map2 (g . h) p) a === obs (map2 g (map2 h p)) a
 
 --------------------------------------------------------------------------------
 -- Profunctor

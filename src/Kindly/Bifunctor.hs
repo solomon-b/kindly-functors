@@ -110,11 +110,11 @@ deriving via (FromBifunctor (Const :: Type -> Type -> Type)) instance Categorica
 
 deriving via (FromBifunctor (K1 i :: Type -> Type -> Type)) instance CategoricalFunctor (K1 i :: Type -> Type -> Type)
 
-instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Flip p :: Type -> Type -> Type) where
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Flip p :: Type -> Type -> Type) where
   type Dom (Flip p) = (->)
   type Cod (Flip p) = (->) ~> (->)
 
-  map f = Nat (\(Flip pxa) -> Flip (map f pxa))
+  map f = Nat (\(Flip pxa) -> Flip (map1 f pxa))
 
 instance (FunctorOf (->) (->) f) => CategoricalFunctor (Clown f :: Type -> Type -> Type) where
   type Dom (Clown f) = (->)

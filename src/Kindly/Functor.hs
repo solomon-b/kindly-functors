@@ -541,11 +541,11 @@ instance (FunctorOf (->) (->) (p a)) => CategoricalFunctor (WrappedBifunctor p a
 
   map f (WrapBifunctor pab) = WrapBifunctor $ map f pab
 
-instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Procompose p q a) where
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Procompose p q a) where
   type Dom (Hask.Profunctor.Procompose p q a) = (->)
   type Cod (Hask.Profunctor.Procompose p q a) = (->)
 
-  map f (Hask.Profunctor.Procompose pxc qdx) = Hask.Profunctor.Procompose (map f pxc) qdx
+  map f (Hask.Profunctor.Procompose pxc qdx) = Hask.Profunctor.Procompose (map1 f pxc) qdx
 
 instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.Profunctor.Rift p q a) where
   type Dom (Hask.Profunctor.Rift p q a) = (->)
@@ -571,11 +571,11 @@ instance (FunctorOf (->) (->) f, FunctorOf (->) (->) (p a)) => CategoricalFuncto
 
   map g (Hask.Profunctor.Cayley fp) = Hask.Profunctor.Cayley $ map (map g) fp
 
-instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Tambara p a) where
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Tambara p a) where
   type Dom (Hask.Profunctor.Tambara p a) = (->)
   type Cod (Hask.Profunctor.Tambara p a) = (->)
 
-  map f (Hask.Profunctor.Tambara t) = Hask.Profunctor.Tambara $ map (\(b, c) -> (f b, c)) t
+  map f (Hask.Profunctor.Tambara t) = Hask.Profunctor.Tambara $ map1 (\(b, c) -> (f b, c)) t
 
 instance CategoricalFunctor (Hask.Profunctor.Pastro p a) where
   type Dom (Hask.Profunctor.Pastro p a) = (->)
@@ -595,12 +595,12 @@ instance CategoricalFunctor (Hask.Profunctor.Copastro p a) where
 
   map f (Hask.Profunctor.Copastro g) = Hask.Profunctor.Copastro $ \n -> Hask.Profunctor.rmap f (g n)
 
-instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Hask.Profunctor.TambaraSum p a) where
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.TambaraSum p a) where
   type Dom (Hask.Profunctor.TambaraSum p a) = (->)
   type Cod (Hask.Profunctor.TambaraSum p a) = (->)
 
   map f (Hask.Profunctor.TambaraSum t) =
-    Hask.Profunctor.TambaraSum $ map (\e -> case e of Left b -> Left (f b); Right c -> Right c) t
+    Hask.Profunctor.TambaraSum $ map1 (\e -> case e of Left b -> Left (f b); Right c -> Right c) t
 
 instance CategoricalFunctor (Hask.Profunctor.PastroSum p a) where
   type Dom (Hask.Profunctor.PastroSum p a) = (->)
@@ -620,11 +620,11 @@ instance CategoricalFunctor (Hask.Profunctor.CopastroSum p a) where
 
   map f (Hask.Profunctor.CopastroSum g) = Hask.Profunctor.CopastroSum $ \n -> Hask.Profunctor.rmap f (g n)
 
-instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Closure p a) where
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Closure p a) where
   type Dom (Hask.Profunctor.Closure p a) = (->)
   type Cod (Hask.Profunctor.Closure p a) = (->)
 
-  map f (Hask.Profunctor.Closure t) = Hask.Profunctor.Closure $ map (f .) t
+  map f (Hask.Profunctor.Closure t) = Hask.Profunctor.Closure $ map1 (f .) t
 
 instance CategoricalFunctor (Hask.Profunctor.Environment p a) where
   type Dom (Hask.Profunctor.Environment p a) = (->)
@@ -638,11 +638,11 @@ instance CategoricalFunctor (Hask.Profunctor.FreeTraversing p a) where
 
   map f (Hask.Profunctor.FreeTraversing l m r) = Hask.Profunctor.FreeTraversing (f . l) m r
 
-instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Hask.Profunctor.CofreeTraversing p a) where
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.CofreeTraversing p a) where
   type Dom (Hask.Profunctor.CofreeTraversing p a) = (->)
   type Cod (Hask.Profunctor.CofreeTraversing p a) = (->)
 
-  map f (Hask.Profunctor.CofreeTraversing t) = Hask.Profunctor.CofreeTraversing $ map (Hask.fmap f) t
+  map f (Hask.Profunctor.CofreeTraversing t) = Hask.Profunctor.CofreeTraversing $ map1 (Hask.fmap f) t
 
 instance CategoricalFunctor (Hask.Profunctor.FreeMapping p a) where
   type Dom (Hask.Profunctor.FreeMapping p a) = (->)
@@ -650,11 +650,11 @@ instance CategoricalFunctor (Hask.Profunctor.FreeMapping p a) where
 
   map f (Hask.Profunctor.FreeMapping l m r) = Hask.Profunctor.FreeMapping (f . l) m r
 
-instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Hask.Profunctor.CofreeMapping p a) where
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.CofreeMapping p a) where
   type Dom (Hask.Profunctor.CofreeMapping p a) = (->)
   type Cod (Hask.Profunctor.CofreeMapping p a) = (->)
 
-  map f (Hask.Profunctor.CofreeMapping t) = Hask.Profunctor.CofreeMapping $ map (Hask.fmap f) t
+  map f (Hask.Profunctor.CofreeMapping t) = Hask.Profunctor.CofreeMapping $ map1 (Hask.fmap f) t
 
 deriving via (FromFunctor (Tagged s)) instance CategoricalFunctor (Tagged s)
 

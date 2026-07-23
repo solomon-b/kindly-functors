@@ -92,31 +92,6 @@ deriving via (FromBifunctor (Const :: Type -> Type -> Type)) instance Categorica
 deriving via (FromBifunctor (K1 i :: Type -> Type -> Type)) instance CategoricalFunctor (K1 i :: Type -> Type -> Type)
 
 --------------------------------------------------------------------------------
--- Covariant MapArg2 instances
-
-instance MapArg2 (->) (->) (,)
-
-instance MapArg2 (->) (->) ((,,) a)
-
-instance MapArg2 (->) (->) ((,,,) a b)
-
-instance MapArg2 (->) (->) ((,,,,) a b c)
-
-instance MapArg2 (->) (->) ((,,,,,) a b c d)
-
-instance MapArg2 (->) (->) ((,,,,,,) a b c d e)
-
-instance MapArg2 (->) (->) Either
-
--- instance MapArg2 (->) (->) These
-
-instance MapArg2 (->) (->) Semigroup.Arg
-
-instance MapArg2 (->) (->) (Const :: Type -> Type -> Type)
-
-instance MapArg2 (->) (->) (K1 i :: Type -> Type -> Type)
-
---------------------------------------------------------------------------------
 
 newtype FromProfunctor f a b = FromProfunctor (f a b)
   deriving newtype (Hask.Functor, Hask.Profunctor)
@@ -139,12 +114,5 @@ instance (Hask.Profunctor p) => CategoricalFunctor (FromProfunctor p) where
 -- Profunctorial Functor instances
 
 deriving via (FromProfunctor (->)) instance CategoricalFunctor (->)
-
--- TODO: Add remaining Profunctor instances
-
---------------------------------------------------------------------------------
--- Profunctorial MapArg2 instances
-
-instance MapArg2 Op (->) (->)
 
 -- TODO: Add remaining Profunctor instances

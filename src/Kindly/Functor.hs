@@ -308,137 +308,6 @@ deriving via (FromFunctor ((,,,,,) a b c d e)) instance CategoricalFunctor ((,,,
 deriving via (FromFunctor ((,,,,,,) a b c d e f)) instance CategoricalFunctor ((,,,,,,) a b c d e f)
 
 --------------------------------------------------------------------------------
--- Covariant MapArg1 instances
-
-instance MapArg1 (->) ZipList
-
-instance MapArg1 (->) Handler
-
-instance MapArg1 (->) Complex
-
-instance MapArg1 (->) Identity
-
-instance MapArg1 (->) Monoid.First
-
-instance MapArg1 (->) Monoid.Last
-
-instance MapArg1 (->) Down
-
-instance MapArg1 (->) Semigroup.First
-
-instance MapArg1 (->) Semigroup.Last
-
-instance MapArg1 (->) Semigroup.Max
-
-instance MapArg1 (->) Semigroup.Min
-
-instance MapArg1 (->) Semigroup.Dual
-
-instance MapArg1 (->) Semigroup.Product
-
-instance MapArg1 (->) Semigroup.Sum
-
-instance MapArg1 (->) NonEmpty
-
-instance MapArg1 (->) STM
-
-instance MapArg1 (->) Par1
-
-instance MapArg1 (->) ArgDescr
-
-instance MapArg1 (->) ArgOrder
-
-instance MapArg1 (->) OptDescr
-
-instance MapArg1 (->) ReadP
-
-instance MapArg1 (->) ReadPrec
-
-instance MapArg1 (->) IO
-
-instance MapArg1 (->) Maybe
-
-#if MIN_VERSION_base(4,16,0)
-instance MapArg1 (->) Solo
-#endif
-
-instance MapArg1 (->) []
-
-instance (Monad m) => MapArg1 (->) (WrappedMonad m)
-
-instance (Arrow a) => MapArg1 (->) (ArrowMonad a)
-
-instance MapArg1 (->) (Lazy.ST s)
-
-instance MapArg1 (->) (Either a)
-
-instance MapArg1 (->) (Proxy :: Type -> Type)
-
-instance MapArg1 (->) (Semigroup.Arg a)
-
-instance MapArg1 (->) (Array i)
-
-instance MapArg1 (->) (U1 :: Type -> Type)
-
-instance MapArg1 (->) (V1 :: Type -> Type)
-
-instance MapArg1 (->) (ST s)
-
-instance MapArg1 (->) ((,) a)
-
-instance (Arrow a) => MapArg1 (->) (WrappedArrow a b)
-
-instance (FunctorOf (->) (->) m) => MapArg1 (->) (Kleisli m a)
-
-instance MapArg1 (->) (Const m :: Type -> Type)
-
-instance (FunctorOf (->) (->) f) => MapArg1 (->) (Monoid.Ap f)
-
-instance (FunctorOf (->) (->) f) => MapArg1 (->) (Monoid.Alt f)
-
-instance (FunctorOf (->) (->) f) => MapArg1 (->) (Rec1 f)
-
-instance MapArg1 (->) (URec (Ptr ()) :: Type -> Type)
-
-instance MapArg1 (->) (URec Char :: Type -> Type)
-
-instance MapArg1 (->) (URec Double :: Type -> Type)
-
-instance MapArg1 (->) (URec Float :: Type -> Type)
-
-instance MapArg1 (->) (URec Int :: Type -> Type)
-
-instance MapArg1 (->) (URec Word :: Type -> Type)
-
-instance MapArg1 (->) ((,,) a b)
-
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (Product f g)
-
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (Sum f g)
-
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (f :*: g)
-
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (f :+: g)
-
-instance MapArg1 (->) (K1 i c :: Type -> Type)
-
-instance MapArg1 (->) ((,,,) a b c)
-
-instance MapArg1 (->) ((->) r)
-
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (Compose f g)
-
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (f :.: g)
-
-instance (FunctorOf (->) (->) f) => MapArg1 (->) (M1 i c f)
-
-instance MapArg1 (->) ((,,,,) a b c d)
-
-instance MapArg1 (->) ((,,,,,) a b c d e)
-
-instance MapArg1 (->) ((,,,,,,) a b c d e f)
-
---------------------------------------------------------------------------------
 
 newtype FromContra f a = FromContra (f a)
   deriving newtype (Hask.Contravariant)
@@ -458,13 +327,6 @@ deriving via (FromContra Predicate) instance CategoricalFunctor Predicate
 -- TODO: Add remaining Contravariant instances
 
 --------------------------------------------------------------------------------
--- Contravariant MapArg1 instances
-
-instance MapArg1 Op Predicate
-
--- TODO: Add remaining Contravariant instances
-
---------------------------------------------------------------------------------
 
 instance CategoricalFunctor Monoid.Endo where
   type Dom Monoid.Endo = Iso (->)
@@ -472,8 +334,6 @@ instance CategoricalFunctor Monoid.Endo where
 
   map :: Iso (->) a b -> Monoid.Endo a -> Monoid.Endo b
   map Iso {..} (Monoid.Endo f) = Monoid.Endo (embed . f . project)
-
-instance MapArg1 (Iso (->)) Monoid.Endo
 
 --------------------------------------------------------------------------------
 

@@ -1,16 +1,17 @@
 # Revision history for kindly-functors
 
 ## Upcoming
-* Expands GHC support through 9.12; bumps nixpkgs, Cabal, and CI tooling.
-* Replaces the `Makefile` with a `justfile` for local development.
-* Adds release commands to `justfile`.
-* Adds a `kindly-functors:laws` public sublibrary of `hedgehog-classes` `Laws`
-  for the categorical-functor classes (the identity and composition laws for
-  `map1`/`map2`, stated over the functor's domain category so one bundle covers
-  covariant, contravariant, and invariant functors), plus `Kindly.Rank2.Laws`
-  for the rank-2 (higher-kinded) `bmap` / `bmap2` functors, and expands the test
-  suite to law-check them across the structural / generic-representation
-  instances.
+* Expand GHC support through 9.12. Bump nixpkgs, Cabal, and CI tooling.
+* Replace the `Makefile` with a `justfile`, including release commands.
+* Add a public `kindly-functors:laws` sublibrary of `hedgehog-classes` `Laws`
+  for the functor classes: identity and composition for `map1`/`map2`, one
+  bundle per variance, plus `Kindly.Rank2.Laws` for the rank-2 `bmap`/`bmap2`
+  functors. The test suite law-checks them across the structural and
+  generic-representation instances.
+* Replace the ~60 empty per-type `MapArg1`/`MapArg2`/`MapArg3` instances with
+  three blanket instances in `Kindly.Class`, keyed on the functor's domain
+  category. A `CategoricalFunctor` instance no longer needs a paired `MapArgN`
+  instance. No public API change.
 
 ## 0.1.0.1 -- 2024-02-04
 

@@ -1,6 +1,6 @@
--- | Reusable @hedgehog-classes@ 'Laws' for this library's category-polymorphic
--- functor classes, so a consumer can law-test their own 'CategoricalFunctor' \/
--- 'MapArg1' \/ 'MapArg2' instances the same way they test 'Functor' or 'Monoid':
+-- | @hedgehog-classes@ 'Laws' for this library's category-polymorphic functor
+-- classes. A consumer can law-test their own 'CategoricalFunctor', 'MapArg1',
+-- and 'MapArg2' instances the way they test 'Functor' or 'Monoid'.
 --
 -- > import Kindly.Functor.Laws (functorLaws)
 -- > import Hedgehog.Classes (lawsCheck)
@@ -8,21 +8,21 @@
 -- > main :: IO Bool
 -- > main = lawsCheck (functorLaws genMyFunctor)
 --
--- There is a separate bundle per variance, each stating the same two functor
--- laws — identity (@'map1' 'id' = 'id'@) and composition
--- (@'map1' (f '.' g) = 'map1' f '.' 'map1' g@), with @'id'@ and @('.')@ taken in
--- the functor's /domain/ 'Category': 'functorLaws' at @('->')@ (covariant),
--- 'contravariantFunctorLaws' at @'Op'@, and 'invariantFunctorLaws' at
--- @'Iso' ('->')@. ('bifunctorLaws' additionally covers @'map2'@.)
+-- One bundle per variance, each stating the same two laws. Identity
+-- (@'map1' 'id' = 'id'@) and composition
+-- (@'map1' (f '.' g) = 'map1' f '.' 'map1' g@), with @'id'@ and @('.')@ in the
+-- functor's /domain/ 'Category'. 'functorLaws' works at @('->')@ (covariant),
+-- 'contravariantFunctorLaws' at @'Op'@, 'invariantFunctorLaws' at
+-- @'Iso' ('->')@. 'bifunctorLaws' also covers @'map2'@.
 --
--- They are separate functions rather than one category-parameterized bundle
--- because the comparison differs: covariant functors are compared directly with
--- 'Eq', whereas contravariant and invariant functors generally have no
--- 'Eq' \/ 'Show' and so are checked extensionally — observing both sides at the
--- 'Int' witness through a caller-supplied @obs :: f 'Int' -> 'Int' -> r@.
+-- The bundles are separate functions because the comparison differs. Covariant
+-- functors compare directly with 'Eq'. Contravariant and invariant functors
+-- usually have no 'Eq' or 'Show', so they are checked extensionally through a
+-- caller-supplied @obs :: f 'Int' -> 'Int' -> r@ that observes both sides at the
+-- 'Int' witness.
 --
 -- The rank-2 generator @forall x. 'Gen' x -> 'Gen' (f x)@ lets a covariant law
--- instantiate @f@ at whichever element type a law needs.
+-- instantiate @f@ at whichever element type it needs.
 module Kindly.Functor.Laws
   ( -- * Covariant functors
     functorLaws,
@@ -106,7 +106,7 @@ covariantComposition genF = property $ do
 -- Contravariant
 
 -- | The functor laws for a /contravariant/ functor's @'map1'@ (domain 'Op'),
--- observed through @obs@ since such functors are not 'Eq' \/ 'Show'.
+-- observed through @obs@ since such functors are not 'Eq' or 'Show'.
 contravariantFunctorLaws ::
   forall f r.
   (MapArg1 Op f, Eq r, Show r) =>

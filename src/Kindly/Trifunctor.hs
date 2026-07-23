@@ -62,15 +62,3 @@ instance CategoricalFunctor ((,,,,,,) x x' x'' x''') where
 
   map :: (a -> b) -> ((->) ~> (->) ~> (->)) ((,,,,,,) x x' x'' x''' a) ((,,,,,,) x x' x'' x''' b)
   map f' = Nat (Nat (\(a, b, c, d, e, f, g) -> (a, b, c, d, f' e, f, g)))
-
---------------------------------------------------------------------------------
-
-instance MapArg3 (->) (->) (->) (,,)
-
-instance MapArg3 (->) (->) (->) ((,,,) x)
-
-instance MapArg3 (->) (->) (->) ((,,,,) x x')
-
-instance MapArg3 (->) (->) (->) ((,,,,,) x x' x'')
-
-instance MapArg3 (->) (->) (->) ((,,,,,,) x x' x'' x''')

@@ -39,6 +39,9 @@ import Data.Functor.These (These1 (..))
 import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid (Endo (..))
 import Data.Profunctor (Costar (..), Forget (..), Star (..))
+import Data.Profunctor.Cayley (Cayley (..))
+import Data.Profunctor.Composition (Procompose (..), Rift (..))
+import Data.Profunctor.Yoneda (Coyoneda (..), Yoneda (..))
 import Data.String (fromString)
 import GHC.Generics (Par1 (..), Rec1 (..), (:*:) (..))
 import Hedgehog (Gen, Group (..), Property, PropertyName, checkSequential)
@@ -229,6 +232,36 @@ genWrappedArrow = (\n -> WrapArrow (+ n)) <$> genInt
 obsWrappedArrow :: WrappedArrow (->) Int Int -> Int -> Int
 obsWrappedArrow (WrapArrow g) = g
 
+genProcompose :: Gen (Procompose (->) (->) Int Int)
+genProcompose = (\n m -> Procompose (+ n) (* m)) <$> genInt <*> genInt
+
+obsProcompose :: Procompose (->) (->) Int Int -> Int -> Int
+obsProcompose (Procompose g h) = g . h
+
+genRift :: Gen (Rift (->) (->) Int Int)
+genRift = (\n -> Rift (\g -> g . (+ n))) <$> genInt
+
+obsRift :: Rift (->) (->) Int Int -> Int -> Int
+obsRift r = runRift r (* 2)
+
+genYoneda :: Gen (Yoneda (->) Int Int)
+genYoneda = (\n -> Yoneda (\l r -> r . (+ n) . l)) <$> genInt
+
+obsYoneda :: Yoneda (->) Int Int -> Int -> Int
+obsYoneda y = runYoneda y id id
+
+genCoyoneda :: Gen (Coyoneda (->) Int Int)
+genCoyoneda = (\n -> Coyoneda id id (+ n)) <$> genInt
+
+obsCoyoneda :: Coyoneda (->) Int Int -> Int -> Int
+obsCoyoneda (Coyoneda l r g) = r . g . l
+
+genCayley :: Gen (Cayley Maybe (->) Int Int)
+genCayley = Cayley <$> genMaybe ((+) <$> genInt)
+
+obsCayley :: Cayley Maybe (->) Int Int -> Int -> Maybe Int
+obsCayley (Cayley mf) a = fmap ($ a) mf
+
 --------------------------------------------------------------------------------
 
 -- | Splice a sublibrary 'Laws' into a hedgehog 'Group', prefixing each property
@@ -293,5 +326,10 @@ tests =
           labeled "Costar Maybe" (profunctorLaws genCostar obsCostar),
           labeled "Forget Int" (profunctorLaws genForget obsForget),
           labeled "Kleisli Maybe" (profunctorLaws genKleisli obsKleisli),
-          labeled "WrappedArrow (->)" (profunctorLaws genWrappedArrow obsWrappedArrow)
+          labeled "WrappedArrow (->)" (profunctorLaws genWrappedArrow obsWrappedArrow),
+          labeled "Procompose (->) (->)" (profunctorLaws genProcompose obsProcompose),
+          labeled "Rift (->) (->)" (profunctorLaws genRift obsRift),
+          labeled "Yoneda (->)" (profunctorLaws genYoneda obsYoneda),
+          labeled "Coyoneda (->)" (profunctorLaws genCoyoneda obsCoyoneda),
+          labeled "Cayley Maybe (->)" (profunctorLaws genCayley obsCayley)
         ]

@@ -68,6 +68,9 @@ import Data.Maybe (Maybe (..))
 import Data.Monoid qualified as Monoid
 import Data.Ord (Down)
 import Data.Profunctor qualified as Hask.Profunctor
+import Data.Profunctor.Cayley qualified as Hask.Profunctor
+import Data.Profunctor.Composition qualified as Hask.Profunctor
+import Data.Profunctor.Yoneda qualified as Hask.Profunctor
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
 import Data.Semigroupoid.Static (Static (..))
@@ -531,6 +534,36 @@ instance (FunctorOf (->) (->) (p a)) => CategoricalFunctor (WrappedBifunctor p a
   type Cod (WrappedBifunctor p a) = (->)
 
   map f (WrapBifunctor pab) = WrapBifunctor $ map f pab
+
+instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Procompose p q a) where
+  type Dom (Hask.Profunctor.Procompose p q a) = (->)
+  type Cod (Hask.Profunctor.Procompose p q a) = (->)
+
+  map f (Hask.Profunctor.Procompose pxc qdx) = Hask.Profunctor.Procompose (map f pxc) qdx
+
+instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.Profunctor.Rift p q a) where
+  type Dom (Hask.Profunctor.Rift p q a) = (->)
+  type Cod (Hask.Profunctor.Rift p q a) = (->)
+
+  map f (Hask.Profunctor.Rift g) = Hask.Profunctor.Rift $ \p -> g (map2 (Op f) p)
+
+instance CategoricalFunctor (Hask.Profunctor.Yoneda p a) where
+  type Dom (Hask.Profunctor.Yoneda p a) = (->)
+  type Cod (Hask.Profunctor.Yoneda p a) = (->)
+
+  map f (Hask.Profunctor.Yoneda g) = Hask.Profunctor.Yoneda $ \l r -> g l (r . f)
+
+instance CategoricalFunctor (Hask.Profunctor.Coyoneda p a) where
+  type Dom (Hask.Profunctor.Coyoneda p a) = (->)
+  type Cod (Hask.Profunctor.Coyoneda p a) = (->)
+
+  map f (Hask.Profunctor.Coyoneda l r p) = Hask.Profunctor.Coyoneda l (f . r) p
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) (p a)) => CategoricalFunctor (Hask.Profunctor.Cayley f p a) where
+  type Dom (Hask.Profunctor.Cayley f p a) = (->)
+  type Cod (Hask.Profunctor.Cayley f p a) = (->)
+
+  map g (Hask.Profunctor.Cayley fp) = Hask.Profunctor.Cayley $ map (map g) fp
 
 --------------------------------------------------------------------------------
 

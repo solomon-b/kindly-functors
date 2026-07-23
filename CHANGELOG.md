@@ -28,6 +28,8 @@
   `Kleisli`, and `WrappedArrow`, and a `profunctorLaws` bundle to the laws
   sublibrary. `Kleisli`, `Star`, and `Forget` need no `Monad`/`Functor`
   constraint for `map2`, unlike their Hask `Profunctor` instances.
+* Add profunctor instances for `Procompose`, `Rift`, `Yoneda`, `Coyoneda`,
+  and `Cayley`, with their partial applications in `Kindly.Functor`.
 
 ## 0.1.0.1 -- 2024-02-04
 

@@ -31,6 +31,9 @@ import Data.Functor.Const (Const)
 import Data.Functor.Contravariant (Op (..))
 import Data.Kind (Constraint, Type)
 import Data.Profunctor qualified as Hask
+import Data.Profunctor.Cayley qualified as Hask
+import Data.Profunctor.Composition qualified as Hask
+import Data.Profunctor.Yoneda qualified as Hask
 import Data.Semigroup qualified as Semigroup
 import Data.These (These)
 import GHC.Generics (K1)
@@ -207,5 +210,35 @@ instance (Arrow p) => CategoricalFunctor (WrappedArrow p) where
   type Cod (WrappedArrow p) = (->) ~> (->)
 
   map (Op f) = Nat (\(WrapArrow g) -> WrapArrow (g . arr f))
+
+instance (MapArg2 Op (->) q) => CategoricalFunctor (Hask.Procompose p q :: Type -> Type -> Type) where
+  type Dom (Hask.Procompose p q) = Op
+  type Cod (Hask.Procompose p q) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Procompose pxc qdx) -> Hask.Procompose pxc (map2 (Op f) qdx))
+
+instance (MapArg2 Op (->) q) => CategoricalFunctor (Hask.Rift p q :: Type -> Type -> Type) where
+  type Dom (Hask.Rift p q) = Op
+  type Cod (Hask.Rift p q) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Rift g) -> Hask.Rift (\p -> map2 (Op f) (g p)))
+
+instance CategoricalFunctor (Hask.Yoneda p) where
+  type Dom (Hask.Yoneda p) = Op
+  type Cod (Hask.Yoneda p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Yoneda g) -> Hask.Yoneda (\l r -> g (f . l) r))
+
+instance CategoricalFunctor (Hask.Coyoneda p) where
+  type Dom (Hask.Coyoneda p) = Op
+  type Cod (Hask.Coyoneda p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Coyoneda l r p) -> Hask.Coyoneda (l . f) r p)
+
+instance (FunctorOf (->) (->) f, MapArg2 Op (->) p) => CategoricalFunctor (Hask.Cayley f p) where
+  type Dom (Hask.Cayley f p) = Op
+  type Cod (Hask.Cayley f p) = (->) ~> (->)
+
+  map (Op g) = Nat (\(Hask.Cayley fp) -> Hask.Cayley (map (map2 (Op g)) fp))
 
 -- TODO: Add remaining Profunctor instances

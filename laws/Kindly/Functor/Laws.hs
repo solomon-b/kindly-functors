@@ -13,7 +13,8 @@
 -- (@'map1' (f '.' g) = 'map1' f '.' 'map1' g@), with @'id'@ and @('.')@ in the
 -- functor's /domain/ 'Category'. 'functorLaws' works at @('->')@ (covariant),
 -- 'contravariantFunctorLaws' at @'Op'@, 'invariantFunctorLaws' at
--- @'Iso' ('->')@. 'bifunctorLaws' also covers @'map2'@.
+-- @'Iso' ('->')@. 'bifunctorLaws' and 'profunctorLaws' also cover @'map2'@,
+-- at the @('->')@ and 'Op' domains respectively.
 --
 -- The bundles are separate functions because the comparison differs. Covariant
 -- functors compare directly with 'Eq'. Contravariant and invariant functors
@@ -35,6 +36,9 @@ module Kindly.Functor.Laws
 
     -- * Covariant bifunctors
     bifunctorLaws,
+
+    -- * Profunctors
+    profunctorLaws,
   )
 where
 
@@ -231,3 +235,46 @@ bifunctorComposition genP = property $ do
   let g = (+ 1) :: Int -> Int
       h = (* 2) :: Int -> Int
   map2 (g . h) p === map2 g (map2 h p)
+
+--------------------------------------------------------------------------------
+-- Profunctor
+
+-- | The functor laws for a /profunctor's/ @'map2'@ (domain 'Op' in its first
+-- argument), observed through @obs@ since profunctors are function-shaped and
+-- have no 'Eq' or 'Show'.
+profunctorLaws ::
+  forall p r.
+  (MapArg2 Op (->) p, Eq r, Show r) =>
+  Gen (p Int Int) ->
+  (p Int Int -> Int -> r) ->
+  Laws
+profunctorLaws genP obs =
+  Laws
+    "Profunctor"
+    [ ("map2 Identity", profunctorIdentity genP obs),
+      ("map2 Composition", profunctorComposition genP obs)
+    ]
+
+profunctorIdentity ::
+  forall p r.
+  (MapArg2 Op (->) p, Eq r, Show r) =>
+  Gen (p Int Int) ->
+  (p Int Int -> Int -> r) ->
+  Property
+profunctorIdentity genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  obs (map2 (id :: Op Int Int) p) a === obs p a
+
+profunctorComposition ::
+  forall p r.
+  (MapArg2 Op (->) p, Eq r, Show r) =>
+  Gen (p Int Int) ->
+  (p Int Int -> Int -> r) ->
+  Property
+profunctorComposition genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  let g = Op (+ 1) :: Op Int Int
+      h = Op (* 2) :: Op Int Int
+  obs (map2 (g . h) p) a === obs (map2 g (map2 h p)) a

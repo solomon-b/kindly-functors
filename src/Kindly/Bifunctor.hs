@@ -12,6 +12,8 @@ where
 
 --------------------------------------------------------------------------------
 
+import Control.Applicative (WrappedArrow (..))
+import Control.Arrow (Arrow, Kleisli (..), arr)
 import Control.Category
 import Data.Bifunctor qualified as Hask
 import Data.Bifunctor.Biff (Biff (..))
@@ -175,5 +177,35 @@ instance (Hask.Profunctor p) => CategoricalFunctor (FromProfunctor p) where
 -- Profunctorial Functor instances
 
 deriving via (FromProfunctor (->)) instance CategoricalFunctor (->)
+
+instance CategoricalFunctor (Kleisli m) where
+  type Dom (Kleisli m) = Op
+  type Cod (Kleisli m) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Kleisli g) -> Kleisli (g . f))
+
+instance CategoricalFunctor (Hask.Star f :: Type -> Type -> Type) where
+  type Dom (Hask.Star f) = Op
+  type Cod (Hask.Star f) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Star g) -> Hask.Star (g . f))
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Hask.Costar f :: Type -> Type -> Type) where
+  type Dom (Hask.Costar f) = Op
+  type Cod (Hask.Costar f) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Costar g) -> Hask.Costar (g . map f))
+
+instance CategoricalFunctor (Hask.Forget r :: Type -> Type -> Type) where
+  type Dom (Hask.Forget r) = Op
+  type Cod (Hask.Forget r) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Forget g) -> Hask.Forget (g . f))
+
+instance (Arrow p) => CategoricalFunctor (WrappedArrow p) where
+  type Dom (WrappedArrow p) = Op
+  type Cod (WrappedArrow p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(WrapArrow g) -> WrapArrow (g . arr f))
 
 -- TODO: Add remaining Profunctor instances

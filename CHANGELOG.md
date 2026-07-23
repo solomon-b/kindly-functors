@@ -24,6 +24,10 @@
 * Add instances for the `bifunctors` package (new dependency): `Flip`, `Clown`,
   `Joker`, `Product`, `Sum`, `Tannen`, `Biff`, and `WrappedBifunctor`, each
   with its partial application in `Kindly.Functor`.
+* Add profunctor (`Dom = Op`) instances for `Star`, `Costar`, `Forget`,
+  `Kleisli`, and `WrappedArrow`, and a `profunctorLaws` bundle to the laws
+  sublibrary. `Kleisli`, `Star`, and `Forget` need no `Monad`/`Functor`
+  constraint for `map2`, unlike their Hask `Profunctor` instances.
 
 ## 0.1.0.1 -- 2024-02-04
 

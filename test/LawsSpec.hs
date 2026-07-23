@@ -14,7 +14,9 @@ module LawsSpec (tests) where
 
 --------------------------------------------------------------------------------
 
+import Control.Applicative (WrappedArrow (..))
 import Control.Applicative.Lift (Lift (..))
+import Control.Arrow (Kleisli (..))
 import Control.Monad.Trans.Except (ExceptT (..))
 import Control.Monad.Trans.Identity (IdentityT (..))
 import Control.Monad.Trans.Maybe (MaybeT (..))
@@ -36,6 +38,7 @@ import Data.Functor.Sum (Sum (..))
 import Data.Functor.These (These1 (..))
 import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid (Endo (..))
+import Data.Profunctor (Costar (..), Forget (..), Star (..))
 import Data.String (fromString)
 import GHC.Generics (Par1 (..), Rec1 (..), (:*:) (..))
 import Hedgehog (Gen, Group (..), Property, PropertyName, checkSequential)
@@ -50,6 +53,7 @@ import Kindly.Functor.Laws
     contravariantFunctorLaws,
     functorLaws,
     invariantFunctorLaws,
+    profunctorLaws,
   )
 import Prelude
 
@@ -187,6 +191,44 @@ genBiffT ga gb = Biff <$> genPairT (genMaybe ga) (genList gb)
 genWrappedT :: Gen a -> Gen b -> Gen (WrappedBifunctor (,) a b)
 genWrappedT ga gb = WrapBifunctor <$> genPairT ga gb
 
+-- Profunctor witnesses, observed by running since they are function-shaped.
+
+genFn :: Gen (Int -> Int)
+genFn = (\n x -> x * 2 + n) <$> genInt
+
+obsFn :: (Int -> Int) -> Int -> Int
+obsFn g = g
+
+genStar :: Gen (Star Maybe Int Int)
+genStar = (\n -> Star (\x -> if x > n then Just (x + n) else Nothing)) <$> genInt
+
+obsStar :: Star Maybe Int Int -> Int -> Maybe Int
+obsStar (Star g) = g
+
+genCostar :: Gen (Costar Maybe Int Int)
+genCostar = (\n -> Costar (maybe n (+ n))) <$> genInt
+
+obsCostar :: Costar Maybe Int Int -> Int -> (Int, Int)
+obsCostar (Costar g) a = (g (Just a), g Nothing)
+
+genForget :: Gen (Forget Int Int Int)
+genForget = (\n -> Forget (* n)) <$> genInt
+
+obsForget :: Forget Int Int Int -> Int -> Int
+obsForget (Forget g) = g
+
+genKleisli :: Gen (Kleisli Maybe Int Int)
+genKleisli = (\n -> Kleisli (\x -> if x > n then Just (x - n) else Nothing)) <$> genInt
+
+obsKleisli :: Kleisli Maybe Int Int -> Int -> Maybe Int
+obsKleisli (Kleisli g) = g
+
+genWrappedArrow :: Gen (WrappedArrow (->) Int Int)
+genWrappedArrow = (\n -> WrapArrow (+ n)) <$> genInt
+
+obsWrappedArrow :: WrappedArrow (->) Int Int -> Int -> Int
+obsWrappedArrow (WrapArrow g) = g
+
 --------------------------------------------------------------------------------
 
 -- | Splice a sublibrary 'Laws' into a hedgehog 'Group', prefixing each property
@@ -244,5 +286,12 @@ tests =
           labeled "Biff (,) Maybe []" (bifunctorLaws genBiffT),
           labeled "Biff (,) Maybe [] Int" (functorLaws (genBiffT genInt)),
           labeled "WrappedBifunctor (,)" (bifunctorLaws genWrappedT),
-          labeled "WrappedBifunctor (,) Int" (functorLaws (genWrappedT genInt))
+          labeled "WrappedBifunctor (,) Int" (functorLaws (genWrappedT genInt)),
+          -- Profunctors (map2 at Op).
+          labeled "(->)" (profunctorLaws genFn obsFn),
+          labeled "Star Maybe" (profunctorLaws genStar obsStar),
+          labeled "Costar Maybe" (profunctorLaws genCostar obsCostar),
+          labeled "Forget Int" (profunctorLaws genForget obsForget),
+          labeled "Kleisli Maybe" (profunctorLaws genKleisli obsKleisli),
+          labeled "WrappedArrow (->)" (profunctorLaws genWrappedArrow obsWrappedArrow)
         ]

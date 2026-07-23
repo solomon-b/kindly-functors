@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Single Parameter Functors of arbitrary categories.
@@ -41,7 +42,9 @@ import Data.Profunctor qualified as Hask.Profunctor
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
 import Data.These (These)
+#if MIN_VERSION_base(4,16,0)
 import Data.Tuple (Solo)
+#endif
 import Foreign (Ptr)
 import GHC.Arr (Array)
 import GHC.Base (Char, Double, IO, Int, Word, ($))
@@ -174,7 +177,9 @@ deriving via (FromFunctor IO) instance CategoricalFunctor IO
 
 deriving via (FromFunctor Maybe) instance CategoricalFunctor Maybe
 
+#if MIN_VERSION_base(4,16,0)
 deriving via (FromFunctor Solo) instance CategoricalFunctor Solo
+#endif
 
 deriving via (FromFunctor []) instance CategoricalFunctor []
 
@@ -353,7 +358,9 @@ instance MapArg1 (->) IO
 
 instance MapArg1 (->) Maybe
 
+#if MIN_VERSION_base(4,16,0)
 instance MapArg1 (->) Solo
+#endif
 
 instance MapArg1 (->) []
 

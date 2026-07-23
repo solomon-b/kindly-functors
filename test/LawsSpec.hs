@@ -14,11 +14,18 @@ module LawsSpec (tests) where
 
 --------------------------------------------------------------------------------
 
+import Control.Applicative.Lift (Lift (..))
+import Control.Monad.Trans.Except (ExceptT (..))
+import Control.Monad.Trans.Identity (IdentityT (..))
+import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Functor.Compose (Compose (..))
-import Data.Functor.Contravariant (Predicate (..))
+import Data.Functor.Constant (Constant (..))
+import Data.Functor.Contravariant (Comparison (..), Equivalence (..), Op (..), Predicate (..))
 import Data.Functor.Identity (Identity (..))
 import Data.Functor.Product qualified as Product
+import Data.Functor.Reverse (Reverse (..))
 import Data.Functor.Sum (Sum (..))
+import Data.Functor.These (These1 (..))
 import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid (Endo (..))
 import Data.String (fromString)
@@ -76,6 +83,34 @@ genRec1 g = Rec1 <$> genMaybe g
 genPar1 :: Gen a -> Gen (Par1 a)
 genPar1 g = Par1 <$> g
 
+-- Transformer functors, instantiated at 'Maybe' so 'Eq1' gives back 'Eq'.
+
+genIdentityT :: Gen a -> Gen (IdentityT Maybe a)
+genIdentityT g = IdentityT <$> genMaybe g
+
+genMaybeT :: Gen a -> Gen (MaybeT Maybe a)
+genMaybeT g = MaybeT <$> genMaybe (genMaybe g)
+
+genExceptT :: Gen a -> Gen (ExceptT Int Maybe a)
+genExceptT g = ExceptT <$> genMaybe (genEitherT genInt g)
+
+genReverse :: Gen a -> Gen (Reverse Maybe a)
+genReverse g = Reverse <$> genMaybe g
+
+genConstant :: Gen a -> Gen (Constant Int a)
+genConstant _ = Constant <$> genInt
+
+genLift :: Gen a -> Gen (Lift Maybe a)
+genLift g = Gen.choice [Pure <$> g, Other <$> genMaybe g]
+
+genThese1 :: Gen a -> Gen (These1 Maybe [] a)
+genThese1 g =
+  Gen.choice
+    [ This1 <$> genMaybe g,
+      That1 <$> genList g,
+      These1 <$> genMaybe g <*> genList g
+    ]
+
 -- Contravariant witness. 'Predicate' has no 'Eq' or 'Show', so observe by running.
 
 genPredicate :: Gen (Predicate Int)
@@ -83,6 +118,24 @@ genPredicate = (\n -> Predicate (> n)) <$> genInt
 
 obsPredicate :: Predicate a -> a -> Bool
 obsPredicate (Predicate p) = p
+
+genComparison :: Gen (Comparison Int)
+genComparison = (\n -> Comparison (\x y -> compare (x + n) y)) <$> genInt
+
+obsComparison :: Comparison Int -> Int -> (Ordering, Ordering)
+obsComparison (Comparison c) a = (c a 0, c 0 a)
+
+genEquivalence :: Gen (Equivalence Int)
+genEquivalence = (\n -> Equivalence (\x y -> div x n == div y n)) <$> Gen.int (Range.linear 1 10)
+
+obsEquivalence :: Equivalence Int -> Int -> (Bool, Bool)
+obsEquivalence (Equivalence e) a = (e a 0, e 0 a)
+
+genOp :: Gen (Op Int Int)
+genOp = (\n -> Op (* n)) <$> genInt
+
+obsOp :: Op Int Int -> Int -> Int
+obsOp (Op g) = g
 
 -- Invariant witness 'Endo', observed by applying.
 
@@ -124,8 +177,19 @@ tests =
           labeled "Sum Maybe []" (functorLaws genSum),
           labeled "Rec1 Maybe" (functorLaws genRec1),
           labeled "Par1" (functorLaws genPar1),
+          -- Transformer and companion functors.
+          labeled "IdentityT Maybe" (functorLaws genIdentityT),
+          labeled "MaybeT Maybe" (functorLaws genMaybeT),
+          labeled "ExceptT Int Maybe" (functorLaws genExceptT),
+          labeled "Reverse Maybe" (functorLaws genReverse),
+          labeled "Constant Int" (functorLaws genConstant),
+          labeled "Lift Maybe" (functorLaws genLift),
+          labeled "These1 Maybe []" (functorLaws genThese1),
           -- Contravariant and invariant variances.
           labeled "Predicate" (contravariantFunctorLaws genPredicate obsPredicate),
+          labeled "Comparison" (contravariantFunctorLaws genComparison obsComparison),
+          labeled "Equivalence" (contravariantFunctorLaws genEquivalence obsEquivalence),
+          labeled "Op Int" (contravariantFunctorLaws genOp obsOp),
           labeled "Endo" (invariantFunctorLaws genEndo obsEndo),
           -- Covariant bifunctors (map2).
           labeled "(,)" (bifunctorLaws genPairT),

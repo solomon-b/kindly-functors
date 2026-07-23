@@ -12,6 +12,15 @@
   three blanket instances in `Kindly.Class`, keyed on the functor's domain
   category. A `CategoricalFunctor` instance no longer needs a paired `MapArgN`
   instance. No public API change.
+* Fill out the `Type -> Type` instance coverage in `Kindly.Functor`: the
+  `transformers` stack (`ReaderT`, `StateT`, `WriterT` (Lazy/Strict/CPS),
+  `ExceptT`, `MaybeT`, `IdentityT`, `ContT`, `RWST` (Lazy/Strict/CPS),
+  `AccumT`, `SelectT`, `Backwards`, `Reverse`, `Constant`, `Lift`),
+  partially-applied profunctors (`Star`, `Costar`, `Forget`), `semigroupoids`
+  (`WrappedApplicative`, `MaybeApply`, `Static`), `These1`, `Generically1`
+  (base >= 4.17), and the remaining non-phantom `Contravariant` types from
+  base (`Comparison`, `Equivalence`, `Op`). Adds a direct `transformers`
+  dependency.
 
 ## 0.1.0.1 -- 2024-02-04
 

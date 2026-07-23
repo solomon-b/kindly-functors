@@ -17,21 +17,42 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Applicative (Const, WrappedArrow, WrappedMonad, ZipList)
+import Control.Applicative.Backwards (Backwards (..))
+import Control.Applicative.Lift (Lift (..))
 import Control.Arrow (Arrow, ArrowMonad, Kleisli (..))
 import Control.Category (Category (..))
 import Control.Exception (Handler)
 import Control.Monad (Monad)
 import Control.Monad.ST (ST)
 import Control.Monad.ST.Lazy qualified as Lazy
+import Control.Monad.Trans.Accum (AccumT (..))
+import Control.Monad.Trans.Cont (ContT (..))
+import Control.Monad.Trans.Except (ExceptT (..))
+import Control.Monad.Trans.Identity (IdentityT (..))
+import Control.Monad.Trans.Maybe (MaybeT (..))
+import Control.Monad.Trans.RWS.CPS qualified as CPS
+import Control.Monad.Trans.RWS.Lazy qualified as Lazy
+import Control.Monad.Trans.RWS.Strict qualified as Strict
+import Control.Monad.Trans.Reader (ReaderT (..))
+import Control.Monad.Trans.Select (SelectT (..))
+import Control.Monad.Trans.State.Lazy qualified as Lazy
+import Control.Monad.Trans.State.Strict qualified as Strict
+import Control.Monad.Trans.Writer.CPS qualified as CPS
+import Control.Monad.Trans.Writer.Lazy qualified as Lazy
+import Control.Monad.Trans.Writer.Strict qualified as Strict
 import Data.Complex (Complex)
-import Data.Either (Either)
+import Data.Either (Either (..))
 import Data.Functor qualified as Hask
+import Data.Functor.Apply (MaybeApply (..), WrappedApplicative (..))
 import Data.Functor.Compose (Compose (..))
-import Data.Functor.Contravariant (Op (..), Predicate)
+import Data.Functor.Constant (Constant)
+import Data.Functor.Contravariant (Comparison, Equivalence, Op (..), Predicate)
 import Data.Functor.Contravariant qualified as Hask
 import Data.Functor.Identity (Identity (..))
 import Data.Functor.Product (Product (..))
+import Data.Functor.Reverse (Reverse (..))
 import Data.Functor.Sum (Sum (..))
+import Data.Functor.These (These1 (..))
 import Data.Isomorphism
 import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty)
@@ -41,6 +62,7 @@ import Data.Ord (Down)
 import Data.Profunctor qualified as Hask.Profunctor
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
+import Data.Semigroupoid.Static (Static (..))
 import Data.These (These)
 #if MIN_VERSION_base(4,16,0)
 import Data.Tuple (Solo)
@@ -51,6 +73,9 @@ import GHC.Base (Char, Double, IO, Int, Word, ($))
 import GHC.Conc (STM)
 import GHC.Exts (Float)
 import GHC.Generics (K1, M1 (..), Par1, Rec1 (..), U1, URec, V1, (:*:) (..), (:+:) (..), (:.:) (..))
+#if MIN_VERSION_base(4,17,0)
+import GHC.Generics (Generic1, Generically1, Rep1)
+#endif
 import Kindly.Class
 import System.Console.GetOpt (ArgDescr, ArgOrder, OptDescr)
 import Text.ParserCombinators.ReadP (ReadP)
@@ -307,6 +332,153 @@ deriving via (FromFunctor ((,,,,,) a b c d e)) instance CategoricalFunctor ((,,,
 
 deriving via (FromFunctor ((,,,,,,) a b c d e f)) instance CategoricalFunctor ((,,,,,,) a b c d e f)
 
+#if MIN_VERSION_base(4,17,0)
+deriving via (FromFunctor (Generically1 (f :: Type -> Type))) instance (Generic1 f, Hask.Functor (Rep1 f)) => CategoricalFunctor (Generically1 f)
+#endif
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (IdentityT m) where
+  type Dom (IdentityT m) = (->)
+  type Cod (IdentityT m) = (->)
+
+  map f (IdentityT m) = IdentityT $ map f m
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (MaybeT m) where
+  type Dom (MaybeT m) = (->)
+  type Cod (MaybeT m) = (->)
+
+  map f (MaybeT m) = MaybeT $ map (map f) m
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (ExceptT e m) where
+  type Dom (ExceptT e m) = (->)
+  type Cod (ExceptT e m) = (->)
+
+  map f (ExceptT m) = ExceptT $ map (map f) m
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (ReaderT r m) where
+  type Dom (ReaderT r m) = (->)
+  type Cod (ReaderT r m) = (->)
+
+  map f (ReaderT g) = ReaderT $ \r -> map f (g r)
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Lazy.StateT s m) where
+  type Dom (Lazy.StateT s m) = (->)
+  type Cod (Lazy.StateT s m) = (->)
+
+  map f (Lazy.StateT g) = Lazy.StateT $ \s -> map (\(a, s') -> (f a, s')) (g s)
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Strict.StateT s m) where
+  type Dom (Strict.StateT s m) = (->)
+  type Cod (Strict.StateT s m) = (->)
+
+  map f (Strict.StateT g) = Strict.StateT $ \s -> map (\(a, s') -> (f a, s')) (g s)
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Lazy.WriterT w m) where
+  type Dom (Lazy.WriterT w m) = (->)
+  type Cod (Lazy.WriterT w m) = (->)
+
+  map f (Lazy.WriterT m) = Lazy.WriterT $ map (\(a, w) -> (f a, w)) m
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Strict.WriterT w m) where
+  type Dom (Strict.WriterT w m) = (->)
+  type Cod (Strict.WriterT w m) = (->)
+
+  map f (Strict.WriterT m) = Strict.WriterT $ map (\(a, w) -> (f a, w)) m
+
+-- The CPS 'CPS.WriterT' and 'CPS.RWST' constructors are not exported, so these
+-- two cannot be written against @FunctorOf (->) (->) m@ and instead reuse the
+-- 'Hask.Functor' instance.
+deriving via (FromFunctor (CPS.WriterT w m)) instance (Hask.Functor m) => CategoricalFunctor (CPS.WriterT w m)
+
+instance CategoricalFunctor (ContT r m) where
+  type Dom (ContT r m) = (->)
+  type Cod (ContT r m) = (->)
+
+  map f (ContT g) = ContT $ \k -> g (k . f)
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Lazy.RWST r w s m) where
+  type Dom (Lazy.RWST r w s m) = (->)
+  type Cod (Lazy.RWST r w s m) = (->)
+
+  map f (Lazy.RWST g) = Lazy.RWST $ \r s -> map (\(a, s', w) -> (f a, s', w)) (g r s)
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Strict.RWST r w s m) where
+  type Dom (Strict.RWST r w s m) = (->)
+  type Cod (Strict.RWST r w s m) = (->)
+
+  map f (Strict.RWST g) = Strict.RWST $ \r s -> map (\(a, s', w) -> (f a, s', w)) (g r s)
+
+deriving via (FromFunctor (CPS.RWST r w s m)) instance (Hask.Functor m) => CategoricalFunctor (CPS.RWST r w s m)
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (AccumT w m) where
+  type Dom (AccumT w m) = (->)
+  type Cod (AccumT w m) = (->)
+
+  map f (AccumT g) = AccumT $ \w -> map (\(a, w') -> (f a, w')) (g w)
+
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (SelectT r m) where
+  type Dom (SelectT r m) = (->)
+  type Cod (SelectT r m) = (->)
+
+  map f (SelectT g) = SelectT $ \k -> map f (g (k . f))
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Backwards f) where
+  type Dom (Backwards f) = (->)
+  type Cod (Backwards f) = (->)
+
+  map f (Backwards m) = Backwards $ map f m
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Reverse f) where
+  type Dom (Reverse f) = (->)
+  type Cod (Reverse f) = (->)
+
+  map f (Reverse m) = Reverse $ map f m
+
+deriving via (FromFunctor (Constant a)) instance CategoricalFunctor (Constant a :: Type -> Type)
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Lift f) where
+  type Dom (Lift f) = (->)
+  type Cod (Lift f) = (->)
+
+  map f (Pure a) = Pure $ f a
+  map f (Other m) = Other $ map f m
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Hask.Profunctor.Star f a) where
+  type Dom (Hask.Profunctor.Star f a) = (->)
+  type Cod (Hask.Profunctor.Star f a) = (->)
+
+  map f (Hask.Profunctor.Star g) = Hask.Profunctor.Star $ \x -> map f (g x)
+
+deriving via (FromFunctor (Hask.Profunctor.Costar f a)) instance CategoricalFunctor (Hask.Profunctor.Costar f a)
+
+deriving via (FromFunctor (Hask.Profunctor.Forget r a)) instance CategoricalFunctor (Hask.Profunctor.Forget r a :: Type -> Type)
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (WrappedApplicative f) where
+  type Dom (WrappedApplicative f) = (->)
+  type Cod (WrappedApplicative f) = (->)
+
+  map f (WrapApplicative m) = WrapApplicative $ map f m
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (MaybeApply f) where
+  type Dom (MaybeApply f) = (->)
+  type Cod (MaybeApply f) = (->)
+
+  map f (MaybeApply (Left fa)) = MaybeApply $ Left $ map f fa
+  map f (MaybeApply (Right a)) = MaybeApply $ Right $ f a
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Static f a) where
+  type Dom (Static f a) = (->)
+  type Cod (Static f a) = (->)
+
+  map f (Static g) = Static $ map (f .) g
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => CategoricalFunctor (These1 f g) where
+  type Dom (These1 f g) = (->)
+  type Cod (These1 f g) = (->)
+
+  map f (This1 fa) = This1 $ map f fa
+  map f (That1 ga) = That1 $ map f ga
+  map f (These1 fa ga) = These1 (map f fa) (map f ga)
+
 --------------------------------------------------------------------------------
 
 newtype FromContra f a = FromContra (f a)
@@ -324,7 +496,16 @@ instance (Hask.Contravariant f) => CategoricalFunctor (FromContra f) where
 
 deriving via (FromContra Predicate) instance CategoricalFunctor Predicate
 
--- TODO: Add remaining Contravariant instances
+deriving via (FromContra Comparison) instance CategoricalFunctor Comparison
+
+deriving via (FromContra Equivalence) instance CategoricalFunctor Equivalence
+
+deriving via (FromContra (Op a)) instance CategoricalFunctor (Op a)
+
+-- NOTE: The remaining 'Hask.Contravariant' instances in base (t'Const',
+-- 'Proxy', 'U1', 'V1', etc.) are phantom in their last parameter and so are
+-- also covariant. Each type gets a single 'CategoricalFunctor' instance and
+-- those types are committed to @Dom = (->)@ above.
 
 --------------------------------------------------------------------------------
 

@@ -79,6 +79,7 @@ import Data.Profunctor.Yoneda qualified as Hask.Profunctor
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
 import Data.Semigroupoid.Static (Static (..))
+import Data.Tagged (Tagged)
 import Data.These (These)
 #if MIN_VERSION_base(4,16,0)
 import Data.Tuple (Solo)
@@ -654,6 +655,8 @@ instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Hask.Profu
   type Cod (Hask.Profunctor.CofreeMapping p a) = (->)
 
   map f (Hask.Profunctor.CofreeMapping t) = Hask.Profunctor.CofreeMapping $ map (Hask.fmap f) t
+
+deriving via (FromFunctor (Tagged s)) instance CategoricalFunctor (Tagged s)
 
 --------------------------------------------------------------------------------
 

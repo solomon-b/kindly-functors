@@ -34,6 +34,8 @@
   `Sum`), `Closure`, `Environment`, `FreeTraversing`, `CofreeTraversing`,
   `FreeMapping`, and `CofreeMapping`, with their partial applications in
   `Kindly.Functor`. This completes coverage of the `profunctors` package.
+* Add instances for `Tagged` (new `tagged` dependency): covariant in its last
+  argument, profunctorial (phantom) in its first.
 
 ## 0.1.0.1 -- 2024-02-04
 

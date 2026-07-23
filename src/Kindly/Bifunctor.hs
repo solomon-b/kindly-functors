@@ -40,6 +40,7 @@ import Data.Profunctor.Strong qualified as Hask
 import Data.Profunctor.Traversing qualified as Hask
 import Data.Profunctor.Yoneda qualified as Hask
 import Data.Semigroup qualified as Semigroup
+import Data.Tagged (Tagged (..))
 import Data.These (These)
 import GHC.Generics (K1)
 import Kindly.Class
@@ -329,3 +330,9 @@ instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.CofreeMapping p) where
   type Cod (Hask.CofreeMapping p) = (->) ~> (->)
 
   map (Op f) = Nat (\(Hask.CofreeMapping t) -> Hask.CofreeMapping (map2 (Op (Hask.fmap f)) t))
+
+instance CategoricalFunctor (Tagged :: Type -> Type -> Type) where
+  type Dom Tagged = Op
+  type Cod Tagged = (->) ~> (->)
+
+  map _ = Nat (\(Tagged b) -> Tagged b)

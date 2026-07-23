@@ -48,6 +48,7 @@ import Data.Profunctor.Strong (Copastro (..), Cotambara (..), Pastro (..), Tamba
 import Data.Profunctor.Traversing (CofreeTraversing (..), FreeTraversing (..))
 import Data.Profunctor.Yoneda (Coyoneda (..), Yoneda (..))
 import Data.String (fromString)
+import Data.Tagged (Tagged (..))
 import GHC.Generics (Par1 (..), Rec1 (..), (:*:) (..))
 import Hedgehog (Gen, Group (..), Property, PropertyName, checkSequential)
 import Hedgehog.Classes (Laws (..))
@@ -353,6 +354,15 @@ genCofreeMapping = (\n -> CofreeMapping (fmap (+ n))) <$> genInt
 obsCofreeMapping :: CofreeMapping (->) Int Int -> Int -> [Int]
 obsCofreeMapping (CofreeMapping t) a = t [a, a + 1]
 
+genTagged :: Gen a -> Gen (Tagged () a)
+genTagged g = Tagged <$> g
+
+genTaggedP :: Gen (Tagged Int Int)
+genTaggedP = Tagged <$> genInt
+
+obsTaggedP :: Tagged Int Int -> Int -> Int
+obsTaggedP (Tagged b) _ = b
+
 --------------------------------------------------------------------------------
 
 -- | Splice a sublibrary 'Laws' into a hedgehog 'Group', prefixing each property
@@ -436,5 +446,7 @@ tests =
           labeled "FreeTraversing (->)" (profunctorLaws genFreeTraversing obsFreeTraversing),
           labeled "CofreeTraversing (->)" (profunctorLaws genCofreeTraversing obsCofreeTraversing),
           labeled "FreeMapping (->)" (profunctorLaws genFreeMapping obsFreeMapping),
-          labeled "CofreeMapping (->)" (profunctorLaws genCofreeMapping obsCofreeMapping)
+          labeled "CofreeMapping (->)" (profunctorLaws genCofreeMapping obsCofreeMapping),
+          labeled "Tagged ()" (functorLaws genTagged),
+          labeled "Tagged" (profunctorLaws genTaggedP obsTaggedP)
         ]

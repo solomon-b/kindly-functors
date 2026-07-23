@@ -14,6 +14,14 @@ where
 
 import Control.Category
 import Data.Bifunctor qualified as Hask
+import Data.Bifunctor.Biff (Biff (..))
+import Data.Bifunctor.Clown (Clown (..))
+import Data.Bifunctor.Flip (Flip (..))
+import Data.Bifunctor.Joker (Joker (..))
+import Data.Bifunctor.Product (Product (..))
+import Data.Bifunctor.Sum (Sum (..))
+import Data.Bifunctor.Tannen (Tannen (..))
+import Data.Bifunctor.Wrapped (WrappedBifunctor (..))
 import Data.Either (Either)
 import Data.Function (flip)
 import Data.Functor qualified as Hask
@@ -90,6 +98,59 @@ deriving via (FromBifunctor Semigroup.Arg) instance CategoricalFunctor Semigroup
 deriving via (FromBifunctor (Const :: Type -> Type -> Type)) instance CategoricalFunctor (Const :: Type -> Type -> Type)
 
 deriving via (FromBifunctor (K1 i :: Type -> Type -> Type)) instance CategoricalFunctor (K1 i :: Type -> Type -> Type)
+
+instance (forall x. FunctorOf (->) (->) (p x)) => CategoricalFunctor (Flip p :: Type -> Type -> Type) where
+  type Dom (Flip p) = (->)
+  type Cod (Flip p) = (->) ~> (->)
+
+  map f = Nat (\(Flip pxa) -> Flip (map f pxa))
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Clown f :: Type -> Type -> Type) where
+  type Dom (Clown f) = (->)
+  type Cod (Clown f) = (->) ~> (->)
+
+  map f = Nat (\(Clown fa) -> Clown (map f fa))
+
+instance CategoricalFunctor (Joker g :: Type -> Type -> Type) where
+  type Dom (Joker g) = (->)
+  type Cod (Joker g) = (->) ~> (->)
+
+  map _ = Nat (\(Joker gb) -> Joker gb)
+
+instance (MapArg2 (->) (->) p, MapArg2 (->) (->) q) => CategoricalFunctor (Product p q) where
+  type Dom (Product p q) = (->)
+  type Cod (Product p q) = (->) ~> (->)
+
+  map f = Nat (\(Pair pab qab) -> Pair (map2 f pab) (map2 f qab))
+
+instance (MapArg2 (->) (->) p, MapArg2 (->) (->) q) => CategoricalFunctor (Sum p q) where
+  type Dom (Sum p q) = (->)
+  type Cod (Sum p q) = (->) ~> (->)
+
+  map f =
+    Nat
+      ( \s -> case s of
+          L2 pab -> L2 (map2 f pab)
+          R2 qab -> R2 (map2 f qab)
+      )
+
+instance (FunctorOf (->) (->) f, MapArg2 (->) (->) p) => CategoricalFunctor (Tannen f p) where
+  type Dom (Tannen f p) = (->)
+  type Cod (Tannen f p) = (->) ~> (->)
+
+  map f = Nat (\(Tannen fp) -> Tannen (map1 (map2 f) fp))
+
+instance (MapArg2 (->) (->) p, FunctorOf (->) (->) f) => CategoricalFunctor (Biff p f g :: Type -> Type -> Type) where
+  type Dom (Biff p f g) = (->)
+  type Cod (Biff p f g) = (->) ~> (->)
+
+  map f = Nat (\(Biff pfg) -> Biff (map2 (map1 f) pfg))
+
+instance (MapArg2 (->) (->) p) => CategoricalFunctor (WrappedBifunctor p) where
+  type Dom (WrappedBifunctor p) = (->)
+  type Cod (WrappedBifunctor p) = (->) ~> (->)
+
+  map f = Nat (\(WrapBifunctor pab) -> WrapBifunctor (map2 f pab))
 
 --------------------------------------------------------------------------------
 

@@ -18,6 +18,14 @@ import Control.Applicative.Lift (Lift (..))
 import Control.Monad.Trans.Except (ExceptT (..))
 import Control.Monad.Trans.Identity (IdentityT (..))
 import Control.Monad.Trans.Maybe (MaybeT (..))
+import Data.Bifunctor.Biff (Biff (..))
+import Data.Bifunctor.Clown (Clown (..))
+import Data.Bifunctor.Flip (Flip (..))
+import Data.Bifunctor.Joker (Joker (..))
+import Data.Bifunctor.Product qualified as BiProduct
+import Data.Bifunctor.Sum qualified as BiSum
+import Data.Bifunctor.Tannen (Tannen (..))
+import Data.Bifunctor.Wrapped (WrappedBifunctor (..))
 import Data.Functor.Compose (Compose (..))
 import Data.Functor.Constant (Constant (..))
 import Data.Functor.Contravariant (Comparison (..), Equivalence (..), Op (..), Predicate (..))
@@ -153,6 +161,32 @@ genPairT ga gb = (,) <$> ga <*> gb
 genEitherT :: Gen a -> Gen b -> Gen (Either a b)
 genEitherT ga gb = Gen.choice [Left <$> ga, Right <$> gb]
 
+-- Bifunctors-package witnesses.
+
+genFlipT :: Gen a -> Gen b -> Gen (Flip (,) a b)
+genFlipT ga gb = Flip <$> genPairT gb ga
+
+genClownT :: Gen a -> Gen b -> Gen (Clown Maybe a b)
+genClownT ga _ = Clown <$> genMaybe ga
+
+genJokerT :: Gen a -> Gen b -> Gen (Joker Maybe a b)
+genJokerT _ gb = Joker <$> genMaybe gb
+
+genBiProductT :: Gen a -> Gen b -> Gen (BiProduct.Product (,) Either a b)
+genBiProductT ga gb = BiProduct.Pair <$> genPairT ga gb <*> genEitherT ga gb
+
+genBiSumT :: Gen a -> Gen b -> Gen (BiSum.Sum (,) Either a b)
+genBiSumT ga gb = Gen.choice [BiSum.L2 <$> genPairT ga gb, BiSum.R2 <$> genEitherT ga gb]
+
+genTannenT :: Gen a -> Gen b -> Gen (Tannen Maybe (,) a b)
+genTannenT ga gb = Tannen <$> genMaybe (genPairT ga gb)
+
+genBiffT :: Gen a -> Gen b -> Gen (Biff (,) Maybe [] a b)
+genBiffT ga gb = Biff <$> genPairT (genMaybe ga) (genList gb)
+
+genWrappedT :: Gen a -> Gen b -> Gen (WrappedBifunctor (,) a b)
+genWrappedT ga gb = WrapBifunctor <$> genPairT ga gb
+
 --------------------------------------------------------------------------------
 
 -- | Splice a sublibrary 'Laws' into a hedgehog 'Group', prefixing each property
@@ -193,5 +227,22 @@ tests =
           labeled "Endo" (invariantFunctorLaws genEndo obsEndo),
           -- Covariant bifunctors (map2).
           labeled "(,)" (bifunctorLaws genPairT),
-          labeled "Either" (bifunctorLaws genEitherT)
+          labeled "Either" (bifunctorLaws genEitherT),
+          -- Bifunctors-package types (map2 and map1 at the partial application).
+          labeled "Flip (,)" (bifunctorLaws genFlipT),
+          labeled "Flip (,) Int" (functorLaws (genFlipT genInt)),
+          labeled "Clown Maybe" (bifunctorLaws genClownT),
+          labeled "Clown Maybe Int" (functorLaws (genClownT genInt)),
+          labeled "Joker Maybe" (bifunctorLaws genJokerT),
+          labeled "Joker Maybe Int" (functorLaws (genJokerT genInt)),
+          labeled "Product (,) Either" (bifunctorLaws genBiProductT),
+          labeled "Product (,) Either Int" (functorLaws (genBiProductT genInt)),
+          labeled "Sum (,) Either" (bifunctorLaws genBiSumT),
+          labeled "Sum (,) Either Int" (functorLaws (genBiSumT genInt)),
+          labeled "Tannen Maybe (,)" (bifunctorLaws genTannenT),
+          labeled "Tannen Maybe (,) Int" (functorLaws (genTannenT genInt)),
+          labeled "Biff (,) Maybe []" (bifunctorLaws genBiffT),
+          labeled "Biff (,) Maybe [] Int" (functorLaws (genBiffT genInt)),
+          labeled "WrappedBifunctor (,)" (bifunctorLaws genWrappedT),
+          labeled "WrappedBifunctor (,) Int" (functorLaws (genWrappedT genInt))
         ]

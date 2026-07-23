@@ -40,6 +40,14 @@ import Control.Monad.Trans.State.Strict qualified as Strict
 import Control.Monad.Trans.Writer.CPS qualified as CPS
 import Control.Monad.Trans.Writer.Lazy qualified as Lazy
 import Control.Monad.Trans.Writer.Strict qualified as Strict
+import Data.Bifunctor.Biff (Biff (..))
+import Data.Bifunctor.Clown (Clown (..))
+import Data.Bifunctor.Flip (Flip (..))
+import Data.Bifunctor.Joker (Joker (..))
+import Data.Bifunctor.Product qualified as Bifunctor
+import Data.Bifunctor.Sum qualified as Bifunctor
+import Data.Bifunctor.Tannen (Tannen (..))
+import Data.Bifunctor.Wrapped (WrappedBifunctor (..))
 import Data.Complex (Complex)
 import Data.Either (Either (..))
 import Data.Functor qualified as Hask
@@ -478,6 +486,51 @@ instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => CategoricalFunctor (T
   map f (This1 fa) = This1 $ map f fa
   map f (That1 ga) = That1 $ map f ga
   map f (These1 fa ga) = These1 (map f fa) (map f ga)
+
+instance (MapArg2 (->) (->) p) => CategoricalFunctor (Flip p a) where
+  type Dom (Flip p a) = (->)
+  type Cod (Flip p a) = (->)
+
+  map f (Flip pba) = Flip $ map2 f pba
+
+deriving via (FromFunctor (Clown f a)) instance CategoricalFunctor (Clown f a :: Type -> Type)
+
+instance (FunctorOf (->) (->) g) => CategoricalFunctor (Joker g a) where
+  type Dom (Joker g a) = (->)
+  type Cod (Joker g a) = (->)
+
+  map f (Joker gb) = Joker $ map f gb
+
+instance (FunctorOf (->) (->) (p a), FunctorOf (->) (->) (q a)) => CategoricalFunctor (Bifunctor.Product p q a) where
+  type Dom (Bifunctor.Product p q a) = (->)
+  type Cod (Bifunctor.Product p q a) = (->)
+
+  map f (Bifunctor.Pair pab qab) = Bifunctor.Pair (map f pab) (map f qab)
+
+instance (FunctorOf (->) (->) (p a), FunctorOf (->) (->) (q a)) => CategoricalFunctor (Bifunctor.Sum p q a) where
+  type Dom (Bifunctor.Sum p q a) = (->)
+  type Cod (Bifunctor.Sum p q a) = (->)
+
+  map f (Bifunctor.L2 pab) = Bifunctor.L2 $ map f pab
+  map f (Bifunctor.R2 qab) = Bifunctor.R2 $ map f qab
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) (p a)) => CategoricalFunctor (Tannen f p a) where
+  type Dom (Tannen f p a) = (->)
+  type Cod (Tannen f p a) = (->)
+
+  map g (Tannen fp) = Tannen $ map (map g) fp
+
+instance (FunctorOf (->) (->) (p (f a)), FunctorOf (->) (->) g) => CategoricalFunctor (Biff p f g a) where
+  type Dom (Biff p f g a) = (->)
+  type Cod (Biff p f g a) = (->)
+
+  map h (Biff pfg) = Biff $ map (map h) pfg
+
+instance (FunctorOf (->) (->) (p a)) => CategoricalFunctor (WrappedBifunctor p a) where
+  type Dom (WrappedBifunctor p a) = (->)
+  type Cod (WrappedBifunctor p a) = (->)
+
+  map f (WrapBifunctor pab) = WrapBifunctor $ map f pab
 
 --------------------------------------------------------------------------------
 

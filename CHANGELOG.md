@@ -21,6 +21,9 @@
   (base >= 4.17), and the remaining non-phantom `Contravariant` types from
   base (`Comparison`, `Equivalence`, `Op`). Adds a direct `transformers`
   dependency.
+* Add instances for the `bifunctors` package (new dependency): `Flip`, `Clown`,
+  `Joker`, `Product`, `Sum`, `Tannen`, `Biff`, and `WrappedBifunctor`, each
+  with its partial application in `Kindly.Functor`.
 
 ## 0.1.0.1 -- 2024-02-04
 

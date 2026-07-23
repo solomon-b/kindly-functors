@@ -79,3 +79,21 @@ class (FunctorOf cat1 (cat2 ~> (->)) p, forall x. MapArg1 cat2 (p x)) => MapArg2
 class (FunctorOf cat1 (cat2 ~> cat3 ~> (->)) p, forall x. MapArg2 cat2 cat3 (p x)) => MapArg3 cat1 cat2 cat3 p | p -> cat1 cat2 cat3 where
   map3 :: (a `cat1` b) -> forall x y. p a x y -> p b x y
   map3 f = runNat (runNat (map @_ @_ @p f))
+
+--------------------------------------------------------------------------------
+
+-- | Every 'CategoricalFunctor' whose codomain is a (nested) functor category
+-- ending in @(->)@ is a @MapArgN@ via the default methods. These blanket
+-- instances mean a 'CategoricalFunctor' instance never needs a paired @MapArgN@
+-- instance. The domain category @cat1@ is recovered from @Dom p@, so one
+-- instance covers every variance (covariant @(->)@, contravariant 'Op',
+-- invariant @'Data.Isomorphism.Iso' (->)@).
+instance (CategoricalFunctor p, Cod p ~ (->), cat1 ~ Dom p) => MapArg1 cat1 p
+
+instance
+  (CategoricalFunctor p, Cod p ~ (cat2 ~> (->)), cat1 ~ Dom p, forall x. MapArg1 cat2 (p x)) =>
+  MapArg2 cat1 cat2 p
+
+instance
+  (CategoricalFunctor p, Cod p ~ (cat2 ~> cat3 ~> (->)), cat1 ~ Dom p, forall x. MapArg2 cat2 cat3 (p x)) =>
+  MapArg3 cat1 cat2 cat3 p

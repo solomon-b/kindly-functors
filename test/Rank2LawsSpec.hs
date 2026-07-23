@@ -9,10 +9,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- | Self-test for @kindly-functors:laws@' rank-2 (higher-kinded) bundles: run
--- 'bmapLaws' \/ 'bmap2Laws' against witness functors whose natural
--- endo-transformations are non-trivial (they carry lists, so @reverse@ \/ @drop@
--- give genuine, composition-distinguishing morphisms).
+-- | Self-test for @kindly-functors:laws@' rank-2 (higher-kinded) bundles. Runs
+-- 'bmapLaws' and 'bmap2Laws' against witness functors whose natural
+-- endo-transformations are non-trivial. They carry lists, so @reverse@ and
+-- @drop@ give genuine, composition-distinguishing morphisms.
 module Rank2LawsSpec (tests) where
 
 --------------------------------------------------------------------------------

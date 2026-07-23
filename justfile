@@ -194,7 +194,7 @@ publish: _require-clean-main _check-version _require-unreleased test
     #!/usr/bin/env bash
     set -euo pipefail
     version=$(awk '/^version:/{print $2; exit}' kindly-functors.cabal)
-    # sanity gate: abort before publishing if Haddocks do not build (not uploaded)
+    # abort before publishing if Haddocks do not build
     cabal haddock all
     cabal sdist all
     sdist="dist-newstyle/sdist/kindly-functors-${version}.tar.gz"

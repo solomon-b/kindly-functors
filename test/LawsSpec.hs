@@ -3,13 +3,13 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | Self-test for the @kindly-functors:laws@ sublibrary: run the exported
--- 'Laws' against known-good library instances across all three variances and,
--- crucially, across the structural / generic-representation instances
--- (@'Data.Functor.Compose.Compose'@, @'Data.Functor.Product.Product'@,
--- @(':*:')@, @'Data.Functor.Sum.Sum'@, @'GHC.Generics.Rec1'@,
--- @'GHC.Generics.Par1'@) — the ones the blanket @MapArgN@ instances must keep
--- resolving. Each instance's functor laws are checked as hedgehog properties.
+-- | Self-test for the @kindly-functors:laws@ sublibrary. Runs the exported
+-- 'Laws' against known-good library instances across all three variances, and
+-- across the structural and generic-representation instances the blanket
+-- @MapArgN@ instances must keep resolving (@'Data.Functor.Compose.Compose'@,
+-- @'Data.Functor.Product.Product'@, @(':*:')@, @'Data.Functor.Sum.Sum'@,
+-- @'GHC.Generics.Rec1'@, @'GHC.Generics.Par1'@). Each instance's functor laws
+-- run as hedgehog properties.
 module LawsSpec (tests) where
 
 --------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ genNonEmpty = Gen.nonEmpty (Range.linear 1 4)
 genIdentity :: Gen a -> Gen (Identity a)
 genIdentity g = Identity <$> g
 
--- Structural / generic-representation functors.
+-- Structural and generic-representation functors.
 
 genCompose :: Gen a -> Gen (Compose Maybe [] a)
 genCompose g = Compose <$> genMaybe (genList g)
@@ -76,7 +76,7 @@ genRec1 g = Rec1 <$> genMaybe g
 genPar1 :: Gen a -> Gen (Par1 a)
 genPar1 g = Par1 <$> g
 
--- Contravariant witness ('Predicate' has no 'Eq' \/ 'Show'; observe by running).
+-- Contravariant witness. 'Predicate' has no 'Eq' or 'Show', so observe by running.
 
 genPredicate :: Gen (Predicate Int)
 genPredicate = (\n -> Predicate (> n)) <$> genInt
@@ -84,7 +84,7 @@ genPredicate = (\n -> Predicate (> n)) <$> genInt
 obsPredicate :: Predicate a -> a -> Bool
 obsPredicate (Predicate p) = p
 
--- Invariant witness ('Endo'; observe by applying).
+-- Invariant witness 'Endo', observed by applying.
 
 genEndo :: Gen (Endo Int)
 genEndo = (\n -> Endo (+ n)) <$> genInt
@@ -117,7 +117,7 @@ tests =
           labeled "[]" (functorLaws genList),
           labeled "Identity" (functorLaws genIdentity),
           labeled "NonEmpty" (functorLaws genNonEmpty),
-          -- Structural / generic-representation instances.
+          -- Structural and generic-representation instances.
           labeled "Compose Maybe []" (functorLaws genCompose),
           labeled "Product Maybe []" (functorLaws genProduct),
           labeled "Maybe :*: []" (functorLaws genGenProd),

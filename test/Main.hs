@@ -17,6 +17,7 @@ import Data.Maybe (maybeToList)
 import Data.Monoid (Endo (..))
 import Kindly qualified as UUT
 import LawsSpec qualified
+import Rank2LawsSpec qualified
 import System.Exit (exitFailure)
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Test.Hspec.Runner (defaultConfig, hspecWithResult, summaryFailures)
@@ -27,7 +28,8 @@ main :: IO ()
 main = do
   summary <- hspecWithResult defaultConfig exampleSpec
   lawsOk <- LawsSpec.tests
-  when (summaryFailures summary > 0 || not lawsOk) exitFailure
+  rank2Ok <- Rank2LawsSpec.tests
+  when (summaryFailures summary > 0 || not lawsOk || not rank2Ok) exitFailure
 
 --------------------------------------------------------------------------------
 -- Example-based (characterization) tests

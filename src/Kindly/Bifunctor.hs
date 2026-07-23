@@ -32,7 +32,12 @@ import Data.Functor.Contravariant (Op (..))
 import Data.Kind (Constraint, Type)
 import Data.Profunctor qualified as Hask
 import Data.Profunctor.Cayley qualified as Hask
+import Data.Profunctor.Choice qualified as Hask
+import Data.Profunctor.Closed qualified as Hask
 import Data.Profunctor.Composition qualified as Hask
+import Data.Profunctor.Mapping qualified as Hask
+import Data.Profunctor.Strong qualified as Hask
+import Data.Profunctor.Traversing qualified as Hask
 import Data.Profunctor.Yoneda qualified as Hask
 import Data.Semigroup qualified as Semigroup
 import Data.These (These)
@@ -241,4 +246,86 @@ instance (FunctorOf (->) (->) f, MapArg2 Op (->) p) => CategoricalFunctor (Hask.
 
   map (Op g) = Nat (\(Hask.Cayley fp) -> Hask.Cayley (map (map2 (Op g)) fp))
 
--- TODO: Add remaining Profunctor instances
+instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.Tambara p) where
+  type Dom (Hask.Tambara p) = Op
+  type Cod (Hask.Tambara p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Tambara t) -> Hask.Tambara (map2 (Op (\(a, c) -> (f a, c))) t))
+
+instance CategoricalFunctor (Hask.Pastro p) where
+  type Dom (Hask.Pastro p) = Op
+  type Cod (Hask.Pastro p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Pastro l m r) -> Hask.Pastro l m (r . f))
+
+instance CategoricalFunctor (Hask.Cotambara q) where
+  type Dom (Hask.Cotambara q) = Op
+  type Cod (Hask.Cotambara q) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Cotambara n r) -> Hask.Cotambara n (Hask.lmap f r))
+
+instance CategoricalFunctor (Hask.Copastro p) where
+  type Dom (Hask.Copastro p) = Op
+  type Cod (Hask.Copastro p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Copastro g) -> Hask.Copastro (\n -> Hask.lmap f (g n)))
+
+instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.TambaraSum p) where
+  type Dom (Hask.TambaraSum p) = Op
+  type Cod (Hask.TambaraSum p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.TambaraSum t) -> Hask.TambaraSum (map2 (Op (map2 f)) t))
+
+instance CategoricalFunctor (Hask.PastroSum p) where
+  type Dom (Hask.PastroSum p) = Op
+  type Cod (Hask.PastroSum p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.PastroSum l m r) -> Hask.PastroSum l m (r . f))
+
+instance CategoricalFunctor (Hask.CotambaraSum q) where
+  type Dom (Hask.CotambaraSum q) = Op
+  type Cod (Hask.CotambaraSum q) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.CotambaraSum n r) -> Hask.CotambaraSum n (Hask.lmap f r))
+
+instance CategoricalFunctor (Hask.CopastroSum p) where
+  type Dom (Hask.CopastroSum p) = Op
+  type Cod (Hask.CopastroSum p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.CopastroSum g) -> Hask.CopastroSum (\n -> Hask.lmap f (g n)))
+
+instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.Closure p) where
+  type Dom (Hask.Closure p) = Op
+  type Cod (Hask.Closure p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Closure t) -> Hask.Closure (map2 (Op (f .)) t))
+
+instance CategoricalFunctor (Hask.Environment p) where
+  type Dom (Hask.Environment p) = Op
+  type Cod (Hask.Environment p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.Environment l m r) -> Hask.Environment l m (r . f))
+
+instance CategoricalFunctor (Hask.FreeTraversing p) where
+  type Dom (Hask.FreeTraversing p) = Op
+  type Cod (Hask.FreeTraversing p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.FreeTraversing l m r) -> Hask.FreeTraversing l m (r . f))
+
+instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.CofreeTraversing p) where
+  type Dom (Hask.CofreeTraversing p) = Op
+  type Cod (Hask.CofreeTraversing p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.CofreeTraversing t) -> Hask.CofreeTraversing (map2 (Op (Hask.fmap f)) t))
+
+instance CategoricalFunctor (Hask.FreeMapping p) where
+  type Dom (Hask.FreeMapping p) = Op
+  type Cod (Hask.FreeMapping p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.FreeMapping l m r) -> Hask.FreeMapping l m (r . f))
+
+instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.CofreeMapping p) where
+  type Dom (Hask.CofreeMapping p) = Op
+  type Cod (Hask.CofreeMapping p) = (->) ~> (->)
+
+  map (Op f) = Nat (\(Hask.CofreeMapping t) -> Hask.CofreeMapping (map2 (Op (Hask.fmap f)) t))

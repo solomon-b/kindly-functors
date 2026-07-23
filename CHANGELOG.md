@@ -30,6 +30,10 @@
   constraint for `map2`, unlike their Hask `Profunctor` instances.
 * Add profunctor instances for `Procompose`, `Rift`, `Yoneda`, `Coyoneda`,
   and `Cayley`, with their partial applications in `Kindly.Functor`.
+* Add profunctor instances for the `Tambara`/`Pastro` families (plain and
+  `Sum`), `Closure`, `Environment`, `FreeTraversing`, `CofreeTraversing`,
+  `FreeMapping`, and `CofreeMapping`, with their partial applications in
+  `Kindly.Functor`. This completes coverage of the `profunctors` package.
 
 ## 0.1.0.1 -- 2024-02-04
 

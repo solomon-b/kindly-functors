@@ -40,7 +40,12 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid (Endo (..))
 import Data.Profunctor (Costar (..), Forget (..), Star (..))
 import Data.Profunctor.Cayley (Cayley (..))
+import Data.Profunctor.Choice (CopastroSum (..), CotambaraSum (..), PastroSum (..), TambaraSum (..))
+import Data.Profunctor.Closed (Closure (..), Environment (..))
 import Data.Profunctor.Composition (Procompose (..), Rift (..))
+import Data.Profunctor.Mapping (CofreeMapping (..), FreeMapping (..))
+import Data.Profunctor.Strong (Copastro (..), Cotambara (..), Pastro (..), Tambara (..))
+import Data.Profunctor.Traversing (CofreeTraversing (..), FreeTraversing (..))
 import Data.Profunctor.Yoneda (Coyoneda (..), Yoneda (..))
 import Data.String (fromString)
 import GHC.Generics (Par1 (..), Rec1 (..), (:*:) (..))
@@ -262,6 +267,92 @@ genCayley = Cayley <$> genMaybe ((+) <$> genInt)
 obsCayley :: Cayley Maybe (->) Int Int -> Int -> Maybe Int
 obsCayley (Cayley mf) a = fmap ($ a) mf
 
+genTambara :: Gen (Tambara (->) Int Int)
+genTambara = (\n -> Tambara (\(a, c) -> (a + n, c))) <$> genInt
+
+obsTambara :: Tambara (->) Int Int -> Int -> Int
+obsTambara (Tambara t) a = fst (t (a, ()))
+
+genPastro :: Gen (Pastro (->) Int Int)
+genPastro = (\n k -> Pastro (\(y, z) -> y + z) (* n) (\a -> (a, k))) <$> genInt <*> genInt
+
+obsPastro :: Pastro (->) Int Int -> Int -> Int
+obsPastro (Pastro l m r) a = case r a of (x, z) -> l (m x, z)
+
+genCotambara :: Gen (Cotambara (->) Int Int)
+genCotambara = (\n -> Cotambara id (+ n)) <$> genInt
+
+obsCotambara :: Cotambara (->) Int Int -> Int -> Int
+obsCotambara (Cotambara n r) = n r
+
+genCopastro :: Gen (Copastro (->) Int Int)
+genCopastro = (\n -> Copastro (\k -> k (+ n))) <$> genInt
+
+obsCopastro :: Copastro (->) Int Int -> Int -> Int
+obsCopastro (Copastro g) = g id
+
+genTambaraSum :: Gen (TambaraSum (->) Int Int)
+genTambaraSum = (\n -> TambaraSum (either (Left . (+ n)) Right)) <$> genInt
+
+obsTambaraSum :: TambaraSum (->) Int Int -> Int -> Either Int ()
+obsTambaraSum (TambaraSum t) a = t (Left a)
+
+genPastroSum :: Gen (PastroSum (->) Int Int)
+genPastroSum = (\n -> PastroSum (either id id) (* n) Left) <$> genInt
+
+obsPastroSum :: PastroSum (->) Int Int -> Int -> Int
+obsPastroSum (PastroSum l m r) a = case r a of
+  Left x -> l (Left (m x))
+  Right z -> l (Right z)
+
+genCotambaraSum :: Gen (CotambaraSum (->) Int Int)
+genCotambaraSum = (\n -> CotambaraSum id (+ n)) <$> genInt
+
+obsCotambaraSum :: CotambaraSum (->) Int Int -> Int -> Int
+obsCotambaraSum (CotambaraSum n r) = n r
+
+genCopastroSum :: Gen (CopastroSum (->) Int Int)
+genCopastroSum = (\n -> CopastroSum (\k -> k (+ n))) <$> genInt
+
+obsCopastroSum :: CopastroSum (->) Int Int -> Int -> Int
+obsCopastroSum (CopastroSum g) = g id
+
+genClosure :: Gen (Closure (->) Int Int)
+genClosure = (\n -> Closure (\g x -> g x + n)) <$> genInt
+
+obsClosure :: Closure (->) Int Int -> Int -> Int
+obsClosure (Closure t) = t (* 2)
+
+genEnvironment :: Gen (Environment (->) Int Int)
+genEnvironment = (\n -> Environment ($ n) (* 2) (+)) <$> genInt
+
+obsEnvironment :: Environment (->) Int Int -> Int -> Int
+obsEnvironment (Environment l m r) a = l (m . r a)
+
+genFreeTraversing :: Gen (FreeTraversing (->) Int Int)
+genFreeTraversing = (\n -> FreeTraversing sum (* n) (\a -> [a, a + 1])) <$> genInt
+
+obsFreeTraversing :: FreeTraversing (->) Int Int -> Int -> Int
+obsFreeTraversing (FreeTraversing l m r) a = l (fmap m (r a))
+
+genCofreeTraversing :: Gen (CofreeTraversing (->) Int Int)
+genCofreeTraversing = (\n -> CofreeTraversing (fmap (+ n))) <$> genInt
+
+obsCofreeTraversing :: CofreeTraversing (->) Int Int -> Int -> [Int]
+obsCofreeTraversing (CofreeTraversing t) a = t [a, a + 1]
+
+genFreeMapping :: Gen (FreeMapping (->) Int Int)
+genFreeMapping = (\n -> FreeMapping sum (* n) (\a -> [a, a + 1])) <$> genInt
+
+obsFreeMapping :: FreeMapping (->) Int Int -> Int -> Int
+obsFreeMapping (FreeMapping l m r) a = l (fmap m (r a))
+
+genCofreeMapping :: Gen (CofreeMapping (->) Int Int)
+genCofreeMapping = (\n -> CofreeMapping (fmap (+ n))) <$> genInt
+
+obsCofreeMapping :: CofreeMapping (->) Int Int -> Int -> [Int]
+obsCofreeMapping (CofreeMapping t) a = t [a, a + 1]
+
 --------------------------------------------------------------------------------
 
 -- | Splice a sublibrary 'Laws' into a hedgehog 'Group', prefixing each property
@@ -331,5 +422,19 @@ tests =
           labeled "Rift (->) (->)" (profunctorLaws genRift obsRift),
           labeled "Yoneda (->)" (profunctorLaws genYoneda obsYoneda),
           labeled "Coyoneda (->)" (profunctorLaws genCoyoneda obsCoyoneda),
-          labeled "Cayley Maybe (->)" (profunctorLaws genCayley obsCayley)
+          labeled "Cayley Maybe (->)" (profunctorLaws genCayley obsCayley),
+          labeled "Tambara (->)" (profunctorLaws genTambara obsTambara),
+          labeled "Pastro (->)" (profunctorLaws genPastro obsPastro),
+          labeled "Cotambara (->)" (profunctorLaws genCotambara obsCotambara),
+          labeled "Copastro (->)" (profunctorLaws genCopastro obsCopastro),
+          labeled "TambaraSum (->)" (profunctorLaws genTambaraSum obsTambaraSum),
+          labeled "PastroSum (->)" (profunctorLaws genPastroSum obsPastroSum),
+          labeled "CotambaraSum (->)" (profunctorLaws genCotambaraSum obsCotambaraSum),
+          labeled "CopastroSum (->)" (profunctorLaws genCopastroSum obsCopastroSum),
+          labeled "Closure (->)" (profunctorLaws genClosure obsClosure),
+          labeled "Environment (->)" (profunctorLaws genEnvironment obsEnvironment),
+          labeled "FreeTraversing (->)" (profunctorLaws genFreeTraversing obsFreeTraversing),
+          labeled "CofreeTraversing (->)" (profunctorLaws genCofreeTraversing obsCofreeTraversing),
+          labeled "FreeMapping (->)" (profunctorLaws genFreeMapping obsFreeMapping),
+          labeled "CofreeMapping (->)" (profunctorLaws genCofreeMapping obsCofreeMapping)
         ]

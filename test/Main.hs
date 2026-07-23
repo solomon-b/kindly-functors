@@ -9,16 +9,31 @@ module Main (main) where
 
 --------------------------------------------------------------------------------
 
+import Control.Arrow (Kleisli (..))
+import Control.Monad (when)
 import Data.Functor.Contravariant (Op (..), Predicate (..))
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (maybeToList)
+import Data.Monoid (Endo (..))
 import Kindly qualified as UUT
-import Test.Hspec (describe, hspec, it, shouldBe)
+import LawsSpec qualified
+import System.Exit (exitFailure)
+import Test.Hspec (Spec, describe, it, shouldBe)
+import Test.Hspec.Runner (defaultConfig, hspecWithResult, summaryFailures)
 
 --------------------------------------------------------------------------------
 
 main :: IO ()
-main = hspec $ do
+main = do
+  summary <- hspecWithResult defaultConfig exampleSpec
+  lawsOk <- LawsSpec.tests
+  when (summaryFailures summary > 0 || not lawsOk) exitFailure
+
+--------------------------------------------------------------------------------
+-- Example-based (characterization) tests
+
+exampleSpec :: Spec
+exampleSpec = do
   describe "fmap" $ do
     it "works covariantly" $ do
       UUT.fmap show (Identity True) `shouldBe` Identity "True"
@@ -27,6 +42,12 @@ main = hspec $ do
     it "composes" $ do
       (UUT.fmap . UUT.fmap) show (Just (Just True)) `shouldBe` Just (Just "True")
       UUT.fmap ((\f -> f "True") . getPredicate) ((UUT.fmap . UUT.fmap) (Op read) (Just (Predicate not))) `shouldBe` Just False
+    it "works over a constrained instance (Kleisli)" $ do
+      runKleisli (UUT.fmap show (Kleisli (\x -> Identity x))) (5 :: Int) `shouldBe` Identity "5"
+
+  describe "invmap" $ do
+    it "works invariantly (Endo)" $ do
+      appEndo (UUT.invmap (+ 1) (subtract 1) (Endo (* 2))) (5 :: Int) `shouldBe` 9
 
   describe "lmap" $ do
     it "works covariantly" $ do
@@ -45,7 +66,7 @@ main = hspec $ do
     it "works contravariantly" $ do
       UUT.bimap (Op (read @Int)) show (+ 1) "0" `shouldBe` "1"
 
-  describe "bimap" $ do
+  describe "trimap" $ do
     it "works covariantly" $ do
       UUT.trimap show show show (True, False, ()) `shouldBe` ("True", "False", "()")
 
@@ -53,6 +74,13 @@ main = hspec $ do
     it "works" $ do
       let hkd = MyHKD (Just True) Nothing
       project (UUT.bmap maybeToList hkd) `shouldBe` ([True], [])
+
+  describe "bmap2" $ do
+    it "works" $ do
+      field (UUT.bmap2 (\(a, _) -> Left a) (MyHKD2 ((), True))) `shouldBe` (Left () :: Either () Bool)
+
+--------------------------------------------------------------------------------
+-- Rank-2 witnesses
 
 data MyHKD f = MyHKD {one :: f Bool, two :: f ()}
 

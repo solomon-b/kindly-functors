@@ -78,15 +78,36 @@ library
 
 --------------------------------------------------------------------------------
 
+library laws
+    import:           common-extensions, warnings
+    visibility:       public
+    hs-source-dirs:   laws
+    exposed-modules:
+      Kindly.Functor.Laws
+      Kindly.Rank2.Laws
+    build-depends:
+      base > 4 && < 5,
+      kindly-functors,
+      semigroupoids                 >= 6.0.0 && < 6.1,
+      hedgehog                      >= 1.4 && < 1.6,
+      hedgehog-classes              >= 0.2 && < 0.3,
+    default-language: Haskell2010
+
+--------------------------------------------------------------------------------
+
 test-suite kindly-functors-test
     import:           warnings
     default-language: Haskell2010
-    -- other-modules:
-    -- other-extensions:
+    other-modules:    LawsSpec
+                      Rank2LawsSpec
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
         base > 4 && < 5,
         hspec,
-        kindly-functors
+        hedgehog                      >= 1.4 && < 1.6,
+        hedgehog-classes              >= 0.2 && < 0.3,
+        kindly-functors,
+        kindly-functors:laws,
+        semigroupoids                 >= 6.0.0 && < 6.1

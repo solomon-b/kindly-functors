@@ -348,18 +348,12 @@ instance CategoricalFunctor (Tagged :: Type -> Type -> Type) where
 --------------------------------------------------------------------------------
 -- Bifunctors into a non-(->) inner category
 
--- | t'Op' is covariant in its first (result) argument, with contravariant
--- partial applications: @'Bifunctor' (->) 'Op' 'Op'@ holds, which neither
--- 'Hask.Bifunctor' nor 'Hask.Profunctor' can express.
 instance CategoricalFunctor Op where
   type Dom Op = (->)
   type Cod Op = Op ~> (->)
 
   map f = Nat (\(Op g) -> Op (f . g))
 
--- | 'Dual' generalizes t'Op': @'Dual' ('->')@ /is/ t'Op' up to newtype
--- wrapping, and for any profunctorial @k@ the partial applications are
--- contravariant while @'map2'@ is covariant.
 instance (forall x. MapArg1 (->) (k x)) => CategoricalFunctor (Dual k :: Type -> Type -> Type) where
   type Dom (Dual k) = (->)
   type Cod (Dual k) = Op ~> (->)

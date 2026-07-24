@@ -403,9 +403,6 @@ instance (FunctorOf (->) (->) m) => CategoricalFunctor (Strict.WriterT w m) wher
 
   map f (Strict.WriterT m) = Strict.WriterT $ map (\(a, w) -> (f a, w)) m
 
--- The CPS 'CPS.WriterT' and 'CPS.RWST' constructors are not exported, so these
--- two cannot be written against @FunctorOf (->) (->) m@ and instead reuse the
--- 'Hask.Functor' instance.
 deriving via (FromFunctor (CPS.WriterT w m)) instance (Hask.Functor m) => CategoricalFunctor (CPS.WriterT w m)
 
 instance CategoricalFunctor (ContT r m) where
@@ -694,11 +691,6 @@ instance (MapArg2 Op (->) k) => CategoricalFunctor (Dual k a) where
   type Cod (Dual k a) = (->)
 
   map (Op f) (Dual kba) = Dual (map2 (Op f) kba)
-
--- NOTE: The remaining 'Hask.Contravariant' instances in base (t'Const',
--- 'Proxy', 'U1', 'V1', etc.) are phantom in their last parameter and so are
--- also covariant. Each type gets a single 'CategoricalFunctor' instance and
--- those types are committed to @Dom = (->)@ above.
 
 --------------------------------------------------------------------------------
 

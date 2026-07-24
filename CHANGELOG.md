@@ -36,16 +36,13 @@
   `Kindly.Functor`. This completes coverage of the `profunctors` package.
 * Add instances for `Tagged` (new `tagged` dependency): covariant in its last
   argument, profunctorial (phantom) in its first.
-* Add a kindly-native bifunctor instance for `Op` itself — covariant in its
-  first (result) argument with contravariant partial applications, so
-  `Bifunctor (->) Op Op` holds. Neither Hask `Bifunctor` nor `Profunctor` can
-  express this shape. An `observedBifunctorLaws` bundle joins the laws
-  sublibrary for such function-shaped covariant `map2` instances.
+* Add a bifunctor instance for `Op`: covariant in its first argument with
+  contravariant partial applications, i.e. `Bifunctor (->) Op Op`. Hask's
+  `Bifunctor` and `Profunctor` cannot express this. Add
+  `observedBifunctorLaws` for law-testing such instances.
 * Add instances for `Fix` (bifunctors), `Constant` at two arguments, and
-  `Dual` (semigroupoids) — the `Op` generalization, mixed-variance like `Op`.
-  Add trifunctor instances for `Forget` (covariant result, contravariant
-  input, phantom third argument) and `K1`, plus an `observedTrifunctorLaws`
-  bundle giving `map3` its first law coverage.
+  `Dual` (semigroupoids). Add trifunctor instances for `Forget` and `K1`,
+  and an `observedTrifunctorLaws` bundle for `map3`.
 
 ## 0.1.0.1 -- 2024-02-04
 

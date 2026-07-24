@@ -65,8 +65,6 @@ instance CategoricalFunctor (K1 :: Type -> Type -> Type -> Type) where
 
   map _ = Nat (Nat (\(K1 c) -> K1 c))
 
--- | 'Forget' is a full mixed-variance trifunctor: covariant in its result
--- @r@, contravariant in its input @a@, and phantom in @b@.
 instance CategoricalFunctor (Forget :: Type -> Type -> Type -> Type) where
   type Dom Forget = (->)
   type Cod Forget = Op ~> (->) ~> (->)

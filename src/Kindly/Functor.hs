@@ -17,31 +17,77 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Applicative (Const, WrappedArrow, WrappedMonad, ZipList)
+import Control.Applicative.Backwards (Backwards (..))
+import Control.Applicative.Lift (Lift (..))
 import Control.Arrow (Arrow, ArrowMonad, Kleisli (..))
 import Control.Category (Category (..))
 import Control.Exception (Handler)
 import Control.Monad (Monad)
 import Control.Monad.ST (ST)
 import Control.Monad.ST.Lazy qualified as Lazy
+import Control.Monad.Trans.Accum (AccumT (..))
+import Control.Monad.Trans.Cont (ContT (..))
+import Control.Monad.Trans.Except (ExceptT (..))
+import Control.Monad.Trans.Identity (IdentityT (..))
+import Control.Monad.Trans.Maybe (MaybeT (..))
+import Control.Monad.Trans.RWS.CPS qualified as CPS
+import Control.Monad.Trans.RWS.Lazy qualified as Lazy
+import Control.Monad.Trans.RWS.Strict qualified as Strict
+import Control.Monad.Trans.Reader (ReaderT (..))
+import Control.Monad.Trans.Select (SelectT (..))
+import Control.Monad.Trans.State.Lazy qualified as Lazy
+import Control.Monad.Trans.State.Strict qualified as Strict
+import Control.Monad.Trans.Writer.CPS qualified as CPS
+import Control.Monad.Trans.Writer.Lazy qualified as Lazy
+import Control.Monad.Trans.Writer.Strict qualified as Strict
+import Data.Bifunctor.Biff (Biff (..))
+import Data.Bifunctor.Clown (Clown (..))
+import Data.Bifunctor.Fix (Fix (..))
+import Data.Bifunctor.Flip (Flip (..))
+import Data.Bifunctor.Joker (Joker (..))
+import Data.Bifunctor.Product qualified as Bifunctor
+import Data.Bifunctor.Sum qualified as Bifunctor
+import Data.Bifunctor.Tannen (Tannen (..))
+import Data.Bifunctor.Wrapped (WrappedBifunctor (..))
 import Data.Complex (Complex)
-import Data.Either (Either)
+import Data.Either (Either (..))
 import Data.Functor qualified as Hask
+import Data.Functor.Apply (MaybeApply (..), WrappedApplicative (..))
 import Data.Functor.Compose (Compose (..))
-import Data.Functor.Contravariant (Op (..), Predicate)
+import Data.Functor.Constant (Constant)
+import Data.Functor.Contravariant (Comparison, Equivalence, Op (..), Predicate)
 import Data.Functor.Contravariant qualified as Hask
 import Data.Functor.Identity (Identity (..))
 import Data.Functor.Product (Product (..))
+import Data.Functor.Reverse (Reverse (..))
 import Data.Functor.Sum (Sum (..))
+import Data.Functor.These (These1 (..))
+import Data.Graph (SCC)
+import Data.IntMap (IntMap)
 import Data.Isomorphism
 import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map (Map)
 import Data.Maybe (Maybe (..))
 import Data.Monoid qualified as Monoid
 import Data.Ord (Down)
 import Data.Profunctor qualified as Hask.Profunctor
+import Data.Profunctor.Cayley qualified as Hask.Profunctor
+import Data.Profunctor.Choice qualified as Hask.Profunctor
+import Data.Profunctor.Closed qualified as Hask.Profunctor
+import Data.Profunctor.Composition qualified as Hask.Profunctor
+import Data.Profunctor.Mapping qualified as Hask.Profunctor
+import Data.Profunctor.Strong qualified as Hask.Profunctor
+import Data.Profunctor.Traversing qualified as Hask.Profunctor
+import Data.Profunctor.Yoneda qualified as Hask.Profunctor
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
+import Data.Semigroupoid.Dual (Dual (..))
+import Data.Semigroupoid.Static (Static (..))
+import Data.Sequence (Seq, ViewL, ViewR)
+import Data.Tagged (Tagged)
 import Data.These (These)
+import Data.Tree (Tree)
 #if MIN_VERSION_base(4,16,0)
 import Data.Tuple (Solo)
 #endif
@@ -51,6 +97,9 @@ import GHC.Base (Char, Double, IO, Int, Word, ($))
 import GHC.Conc (STM)
 import GHC.Exts (Float)
 import GHC.Generics (K1, M1 (..), Par1, Rec1 (..), U1, URec, V1, (:*:) (..), (:+:) (..), (:.:) (..))
+#if MIN_VERSION_base(4,17,0)
+import GHC.Generics (Generic1, Generically1, Rep1)
+#endif
 import Kindly.Class
 import System.Console.GetOpt (ArgDescr, ArgOrder, OptDescr)
 import Text.ParserCombinators.ReadP (ReadP)
@@ -307,136 +356,331 @@ deriving via (FromFunctor ((,,,,,) a b c d e)) instance CategoricalFunctor ((,,,
 
 deriving via (FromFunctor ((,,,,,,) a b c d e f)) instance CategoricalFunctor ((,,,,,,) a b c d e f)
 
---------------------------------------------------------------------------------
--- Covariant MapArg1 instances
-
-instance MapArg1 (->) ZipList
-
-instance MapArg1 (->) Handler
-
-instance MapArg1 (->) Complex
-
-instance MapArg1 (->) Identity
-
-instance MapArg1 (->) Monoid.First
-
-instance MapArg1 (->) Monoid.Last
-
-instance MapArg1 (->) Down
-
-instance MapArg1 (->) Semigroup.First
-
-instance MapArg1 (->) Semigroup.Last
-
-instance MapArg1 (->) Semigroup.Max
-
-instance MapArg1 (->) Semigroup.Min
-
-instance MapArg1 (->) Semigroup.Dual
-
-instance MapArg1 (->) Semigroup.Product
-
-instance MapArg1 (->) Semigroup.Sum
-
-instance MapArg1 (->) NonEmpty
-
-instance MapArg1 (->) STM
-
-instance MapArg1 (->) Par1
-
-instance MapArg1 (->) ArgDescr
-
-instance MapArg1 (->) ArgOrder
-
-instance MapArg1 (->) OptDescr
-
-instance MapArg1 (->) ReadP
-
-instance MapArg1 (->) ReadPrec
-
-instance MapArg1 (->) IO
-
-instance MapArg1 (->) Maybe
-
-#if MIN_VERSION_base(4,16,0)
-instance MapArg1 (->) Solo
+#if MIN_VERSION_base(4,17,0)
+deriving via (FromFunctor (Generically1 (f :: Type -> Type))) instance (Generic1 f, Hask.Functor (Rep1 f)) => CategoricalFunctor (Generically1 f)
 #endif
 
-instance MapArg1 (->) []
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (IdentityT m) where
+  type Dom (IdentityT m) = (->)
+  type Cod (IdentityT m) = (->)
 
-instance (Monad m) => MapArg1 (->) (WrappedMonad m)
+  map f (IdentityT m) = IdentityT $ map f m
 
-instance (Arrow a) => MapArg1 (->) (ArrowMonad a)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (MaybeT m) where
+  type Dom (MaybeT m) = (->)
+  type Cod (MaybeT m) = (->)
 
-instance MapArg1 (->) (Lazy.ST s)
+  map f (MaybeT m) = MaybeT $ map (map f) m
 
-instance MapArg1 (->) (Either a)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (ExceptT e m) where
+  type Dom (ExceptT e m) = (->)
+  type Cod (ExceptT e m) = (->)
 
-instance MapArg1 (->) (Proxy :: Type -> Type)
+  map f (ExceptT m) = ExceptT $ map (map f) m
 
-instance MapArg1 (->) (Semigroup.Arg a)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (ReaderT r m) where
+  type Dom (ReaderT r m) = (->)
+  type Cod (ReaderT r m) = (->)
 
-instance MapArg1 (->) (Array i)
+  map f (ReaderT g) = ReaderT $ \r -> map f (g r)
 
-instance MapArg1 (->) (U1 :: Type -> Type)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Lazy.StateT s m) where
+  type Dom (Lazy.StateT s m) = (->)
+  type Cod (Lazy.StateT s m) = (->)
 
-instance MapArg1 (->) (V1 :: Type -> Type)
+  map f (Lazy.StateT g) = Lazy.StateT $ \s -> map (\(a, s') -> (f a, s')) (g s)
 
-instance MapArg1 (->) (ST s)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Strict.StateT s m) where
+  type Dom (Strict.StateT s m) = (->)
+  type Cod (Strict.StateT s m) = (->)
 
-instance MapArg1 (->) ((,) a)
+  map f (Strict.StateT g) = Strict.StateT $ \s -> map (\(a, s') -> (f a, s')) (g s)
 
-instance (Arrow a) => MapArg1 (->) (WrappedArrow a b)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Lazy.WriterT w m) where
+  type Dom (Lazy.WriterT w m) = (->)
+  type Cod (Lazy.WriterT w m) = (->)
 
-instance (FunctorOf (->) (->) m) => MapArg1 (->) (Kleisli m a)
+  map f (Lazy.WriterT m) = Lazy.WriterT $ map (\(a, w) -> (f a, w)) m
 
-instance MapArg1 (->) (Const m :: Type -> Type)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Strict.WriterT w m) where
+  type Dom (Strict.WriterT w m) = (->)
+  type Cod (Strict.WriterT w m) = (->)
 
-instance (FunctorOf (->) (->) f) => MapArg1 (->) (Monoid.Ap f)
+  map f (Strict.WriterT m) = Strict.WriterT $ map (\(a, w) -> (f a, w)) m
 
-instance (FunctorOf (->) (->) f) => MapArg1 (->) (Monoid.Alt f)
+deriving via (FromFunctor (CPS.WriterT w m)) instance (Hask.Functor m) => CategoricalFunctor (CPS.WriterT w m)
 
-instance (FunctorOf (->) (->) f) => MapArg1 (->) (Rec1 f)
+instance CategoricalFunctor (ContT r m) where
+  type Dom (ContT r m) = (->)
+  type Cod (ContT r m) = (->)
 
-instance MapArg1 (->) (URec (Ptr ()) :: Type -> Type)
+  map f (ContT g) = ContT $ \k -> g (k . f)
 
-instance MapArg1 (->) (URec Char :: Type -> Type)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Lazy.RWST r w s m) where
+  type Dom (Lazy.RWST r w s m) = (->)
+  type Cod (Lazy.RWST r w s m) = (->)
 
-instance MapArg1 (->) (URec Double :: Type -> Type)
+  map f (Lazy.RWST g) = Lazy.RWST $ \r s -> map (\(a, s', w) -> (f a, s', w)) (g r s)
 
-instance MapArg1 (->) (URec Float :: Type -> Type)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (Strict.RWST r w s m) where
+  type Dom (Strict.RWST r w s m) = (->)
+  type Cod (Strict.RWST r w s m) = (->)
 
-instance MapArg1 (->) (URec Int :: Type -> Type)
+  map f (Strict.RWST g) = Strict.RWST $ \r s -> map (\(a, s', w) -> (f a, s', w)) (g r s)
 
-instance MapArg1 (->) (URec Word :: Type -> Type)
+deriving via (FromFunctor (CPS.RWST r w s m)) instance (Hask.Functor m) => CategoricalFunctor (CPS.RWST r w s m)
 
-instance MapArg1 (->) ((,,) a b)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (AccumT w m) where
+  type Dom (AccumT w m) = (->)
+  type Cod (AccumT w m) = (->)
 
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (Product f g)
+  map f (AccumT g) = AccumT $ \w -> map (\(a, w') -> (f a, w')) (g w)
 
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (Sum f g)
+instance (FunctorOf (->) (->) m) => CategoricalFunctor (SelectT r m) where
+  type Dom (SelectT r m) = (->)
+  type Cod (SelectT r m) = (->)
 
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (f :*: g)
+  map f (SelectT g) = SelectT $ \k -> map f (g (k . f))
 
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (f :+: g)
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Backwards f) where
+  type Dom (Backwards f) = (->)
+  type Cod (Backwards f) = (->)
 
-instance MapArg1 (->) (K1 i c :: Type -> Type)
+  map f (Backwards m) = Backwards $ map f m
 
-instance MapArg1 (->) ((,,,) a b c)
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Reverse f) where
+  type Dom (Reverse f) = (->)
+  type Cod (Reverse f) = (->)
 
-instance MapArg1 (->) ((->) r)
+  map f (Reverse m) = Reverse $ map f m
 
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (Compose f g)
+deriving via (FromFunctor (Constant a)) instance CategoricalFunctor (Constant a :: Type -> Type)
 
-instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => MapArg1 (->) (f :.: g)
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Lift f) where
+  type Dom (Lift f) = (->)
+  type Cod (Lift f) = (->)
 
-instance (FunctorOf (->) (->) f) => MapArg1 (->) (M1 i c f)
+  map f (Pure a) = Pure $ f a
+  map f (Other m) = Other $ map f m
 
-instance MapArg1 (->) ((,,,,) a b c d)
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Hask.Profunctor.Star f a) where
+  type Dom (Hask.Profunctor.Star f a) = (->)
+  type Cod (Hask.Profunctor.Star f a) = (->)
 
-instance MapArg1 (->) ((,,,,,) a b c d e)
+  map f (Hask.Profunctor.Star g) = Hask.Profunctor.Star $ \x -> map f (g x)
 
-instance MapArg1 (->) ((,,,,,,) a b c d e f)
+deriving via (FromFunctor (Hask.Profunctor.Costar f a)) instance CategoricalFunctor (Hask.Profunctor.Costar f a)
+
+deriving via (FromFunctor (Hask.Profunctor.Forget r a)) instance CategoricalFunctor (Hask.Profunctor.Forget r a :: Type -> Type)
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (WrappedApplicative f) where
+  type Dom (WrappedApplicative f) = (->)
+  type Cod (WrappedApplicative f) = (->)
+
+  map f (WrapApplicative m) = WrapApplicative $ map f m
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (MaybeApply f) where
+  type Dom (MaybeApply f) = (->)
+  type Cod (MaybeApply f) = (->)
+
+  map f (MaybeApply (Left fa)) = MaybeApply $ Left $ map f fa
+  map f (MaybeApply (Right a)) = MaybeApply $ Right $ f a
+
+instance (FunctorOf (->) (->) f) => CategoricalFunctor (Static f a) where
+  type Dom (Static f a) = (->)
+  type Cod (Static f a) = (->)
+
+  map f (Static g) = Static $ map (f .) g
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) g) => CategoricalFunctor (These1 f g) where
+  type Dom (These1 f g) = (->)
+  type Cod (These1 f g) = (->)
+
+  map f (This1 fa) = This1 $ map f fa
+  map f (That1 ga) = That1 $ map f ga
+  map f (These1 fa ga) = These1 (map f fa) (map f ga)
+
+instance (MapArg2 (->) (->) p) => CategoricalFunctor (Flip p a) where
+  type Dom (Flip p a) = (->)
+  type Cod (Flip p a) = (->)
+
+  map f (Flip pba) = Flip $ map2 f pba
+
+deriving via (FromFunctor (Clown f a)) instance CategoricalFunctor (Clown f a :: Type -> Type)
+
+instance (FunctorOf (->) (->) g) => CategoricalFunctor (Joker g a) where
+  type Dom (Joker g a) = (->)
+  type Cod (Joker g a) = (->)
+
+  map f (Joker gb) = Joker $ map f gb
+
+instance (FunctorOf (->) (->) (p a), FunctorOf (->) (->) (q a)) => CategoricalFunctor (Bifunctor.Product p q a) where
+  type Dom (Bifunctor.Product p q a) = (->)
+  type Cod (Bifunctor.Product p q a) = (->)
+
+  map f (Bifunctor.Pair pab qab) = Bifunctor.Pair (map f pab) (map f qab)
+
+instance (FunctorOf (->) (->) (p a), FunctorOf (->) (->) (q a)) => CategoricalFunctor (Bifunctor.Sum p q a) where
+  type Dom (Bifunctor.Sum p q a) = (->)
+  type Cod (Bifunctor.Sum p q a) = (->)
+
+  map f (Bifunctor.L2 pab) = Bifunctor.L2 $ map f pab
+  map f (Bifunctor.R2 qab) = Bifunctor.R2 $ map f qab
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) (p a)) => CategoricalFunctor (Tannen f p a) where
+  type Dom (Tannen f p a) = (->)
+  type Cod (Tannen f p a) = (->)
+
+  map g (Tannen fp) = Tannen $ map (map g) fp
+
+instance (FunctorOf (->) (->) (p (f a)), FunctorOf (->) (->) g) => CategoricalFunctor (Biff p f g a) where
+  type Dom (Biff p f g a) = (->)
+  type Cod (Biff p f g a) = (->)
+
+  map h (Biff pfg) = Biff $ map (map h) pfg
+
+instance (FunctorOf (->) (->) (p a)) => CategoricalFunctor (WrappedBifunctor p a) where
+  type Dom (WrappedBifunctor p a) = (->)
+  type Cod (WrappedBifunctor p a) = (->)
+
+  map f (WrapBifunctor pab) = WrapBifunctor $ map f pab
+
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Procompose p q a) where
+  type Dom (Hask.Profunctor.Procompose p q a) = (->)
+  type Cod (Hask.Profunctor.Procompose p q a) = (->)
+
+  map f (Hask.Profunctor.Procompose pxc qdx) = Hask.Profunctor.Procompose (map1 f pxc) qdx
+
+instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.Profunctor.Rift p q a) where
+  type Dom (Hask.Profunctor.Rift p q a) = (->)
+  type Cod (Hask.Profunctor.Rift p q a) = (->)
+
+  map f (Hask.Profunctor.Rift g) = Hask.Profunctor.Rift $ \p -> g (map2 (Op f) p)
+
+instance CategoricalFunctor (Hask.Profunctor.Yoneda p a) where
+  type Dom (Hask.Profunctor.Yoneda p a) = (->)
+  type Cod (Hask.Profunctor.Yoneda p a) = (->)
+
+  map f (Hask.Profunctor.Yoneda g) = Hask.Profunctor.Yoneda $ \l r -> g l (r . f)
+
+instance CategoricalFunctor (Hask.Profunctor.Coyoneda p a) where
+  type Dom (Hask.Profunctor.Coyoneda p a) = (->)
+  type Cod (Hask.Profunctor.Coyoneda p a) = (->)
+
+  map f (Hask.Profunctor.Coyoneda l r p) = Hask.Profunctor.Coyoneda l (f . r) p
+
+instance (FunctorOf (->) (->) f, FunctorOf (->) (->) (p a)) => CategoricalFunctor (Hask.Profunctor.Cayley f p a) where
+  type Dom (Hask.Profunctor.Cayley f p a) = (->)
+  type Cod (Hask.Profunctor.Cayley f p a) = (->)
+
+  map g (Hask.Profunctor.Cayley fp) = Hask.Profunctor.Cayley $ map (map g) fp
+
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Tambara p a) where
+  type Dom (Hask.Profunctor.Tambara p a) = (->)
+  type Cod (Hask.Profunctor.Tambara p a) = (->)
+
+  map f (Hask.Profunctor.Tambara t) = Hask.Profunctor.Tambara $ map1 (\(b, c) -> (f b, c)) t
+
+instance CategoricalFunctor (Hask.Profunctor.Pastro p a) where
+  type Dom (Hask.Profunctor.Pastro p a) = (->)
+  type Cod (Hask.Profunctor.Pastro p a) = (->)
+
+  map f (Hask.Profunctor.Pastro l m r) = Hask.Profunctor.Pastro (f . l) m r
+
+instance CategoricalFunctor (Hask.Profunctor.Cotambara q a) where
+  type Dom (Hask.Profunctor.Cotambara q a) = (->)
+  type Cod (Hask.Profunctor.Cotambara q a) = (->)
+
+  map f (Hask.Profunctor.Cotambara n r) = Hask.Profunctor.Cotambara n (Hask.Profunctor.rmap f r)
+
+instance CategoricalFunctor (Hask.Profunctor.Copastro p a) where
+  type Dom (Hask.Profunctor.Copastro p a) = (->)
+  type Cod (Hask.Profunctor.Copastro p a) = (->)
+
+  map f (Hask.Profunctor.Copastro g) = Hask.Profunctor.Copastro $ \n -> Hask.Profunctor.rmap f (g n)
+
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.TambaraSum p a) where
+  type Dom (Hask.Profunctor.TambaraSum p a) = (->)
+  type Cod (Hask.Profunctor.TambaraSum p a) = (->)
+
+  map f (Hask.Profunctor.TambaraSum t) =
+    Hask.Profunctor.TambaraSum $ map1 (\e -> case e of Left b -> Left (f b); Right c -> Right c) t
+
+instance CategoricalFunctor (Hask.Profunctor.PastroSum p a) where
+  type Dom (Hask.Profunctor.PastroSum p a) = (->)
+  type Cod (Hask.Profunctor.PastroSum p a) = (->)
+
+  map f (Hask.Profunctor.PastroSum l m r) = Hask.Profunctor.PastroSum (f . l) m r
+
+instance CategoricalFunctor (Hask.Profunctor.CotambaraSum q a) where
+  type Dom (Hask.Profunctor.CotambaraSum q a) = (->)
+  type Cod (Hask.Profunctor.CotambaraSum q a) = (->)
+
+  map f (Hask.Profunctor.CotambaraSum n r) = Hask.Profunctor.CotambaraSum n (Hask.Profunctor.rmap f r)
+
+instance CategoricalFunctor (Hask.Profunctor.CopastroSum p a) where
+  type Dom (Hask.Profunctor.CopastroSum p a) = (->)
+  type Cod (Hask.Profunctor.CopastroSum p a) = (->)
+
+  map f (Hask.Profunctor.CopastroSum g) = Hask.Profunctor.CopastroSum $ \n -> Hask.Profunctor.rmap f (g n)
+
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.Closure p a) where
+  type Dom (Hask.Profunctor.Closure p a) = (->)
+  type Cod (Hask.Profunctor.Closure p a) = (->)
+
+  map f (Hask.Profunctor.Closure t) = Hask.Profunctor.Closure $ map1 (f .) t
+
+instance CategoricalFunctor (Hask.Profunctor.Environment p a) where
+  type Dom (Hask.Profunctor.Environment p a) = (->)
+  type Cod (Hask.Profunctor.Environment p a) = (->)
+
+  map f (Hask.Profunctor.Environment l m r) = Hask.Profunctor.Environment (f . l) m r
+
+instance CategoricalFunctor (Hask.Profunctor.FreeTraversing p a) where
+  type Dom (Hask.Profunctor.FreeTraversing p a) = (->)
+  type Cod (Hask.Profunctor.FreeTraversing p a) = (->)
+
+  map f (Hask.Profunctor.FreeTraversing l m r) = Hask.Profunctor.FreeTraversing (f . l) m r
+
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.CofreeTraversing p a) where
+  type Dom (Hask.Profunctor.CofreeTraversing p a) = (->)
+  type Cod (Hask.Profunctor.CofreeTraversing p a) = (->)
+
+  map f (Hask.Profunctor.CofreeTraversing t) = Hask.Profunctor.CofreeTraversing $ map1 (Hask.fmap f) t
+
+instance CategoricalFunctor (Hask.Profunctor.FreeMapping p a) where
+  type Dom (Hask.Profunctor.FreeMapping p a) = (->)
+  type Cod (Hask.Profunctor.FreeMapping p a) = (->)
+
+  map f (Hask.Profunctor.FreeMapping l m r) = Hask.Profunctor.FreeMapping (f . l) m r
+
+instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.CofreeMapping p a) where
+  type Dom (Hask.Profunctor.CofreeMapping p a) = (->)
+  type Cod (Hask.Profunctor.CofreeMapping p a) = (->)
+
+  map f (Hask.Profunctor.CofreeMapping t) = Hask.Profunctor.CofreeMapping $ map1 (Hask.fmap f) t
+
+deriving via (FromFunctor (Tagged s)) instance CategoricalFunctor (Tagged s)
+
+instance (MapArg2 (->) (->) p) => CategoricalFunctor (Fix p) where
+  type Dom (Fix p) = (->)
+  type Cod (Fix p) = (->)
+
+  map f (In p) = In (map2 (map f) (map1 f p))
+
+deriving via (FromFunctor (Map k)) instance CategoricalFunctor (Map k)
+
+deriving via (FromFunctor IntMap) instance CategoricalFunctor IntMap
+
+deriving via (FromFunctor Seq) instance CategoricalFunctor Seq
+
+deriving via (FromFunctor ViewL) instance CategoricalFunctor ViewL
+
+deriving via (FromFunctor ViewR) instance CategoricalFunctor ViewR
+
+deriving via (FromFunctor Tree) instance CategoricalFunctor Tree
+
+deriving via (FromFunctor SCC) instance CategoricalFunctor SCC
 
 --------------------------------------------------------------------------------
 
@@ -455,14 +699,17 @@ instance (Hask.Contravariant f) => CategoricalFunctor (FromContra f) where
 
 deriving via (FromContra Predicate) instance CategoricalFunctor Predicate
 
--- TODO: Add remaining Contravariant instances
+deriving via (FromContra Comparison) instance CategoricalFunctor Comparison
 
---------------------------------------------------------------------------------
--- Contravariant MapArg1 instances
+deriving via (FromContra Equivalence) instance CategoricalFunctor Equivalence
 
-instance MapArg1 Op Predicate
+deriving via (FromContra (Op a)) instance CategoricalFunctor (Op a)
 
--- TODO: Add remaining Contravariant instances
+instance (MapArg2 Op (->) k) => CategoricalFunctor (Dual k a) where
+  type Dom (Dual k a) = Op
+  type Cod (Dual k a) = (->)
+
+  map (Op f) (Dual kba) = Dual (map2 (Op f) kba)
 
 --------------------------------------------------------------------------------
 
@@ -472,8 +719,6 @@ instance CategoricalFunctor Monoid.Endo where
 
   map :: Iso (->) a b -> Monoid.Endo a -> Monoid.Endo b
   map Iso {..} (Monoid.Endo f) = Monoid.Endo (embed . f . project)
-
-instance MapArg1 (Iso (->)) Monoid.Endo
 
 --------------------------------------------------------------------------------
 

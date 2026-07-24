@@ -62,9 +62,12 @@ import Data.Functor.Product (Product (..))
 import Data.Functor.Reverse (Reverse (..))
 import Data.Functor.Sum (Sum (..))
 import Data.Functor.These (These1 (..))
+import Data.Graph (SCC)
+import Data.IntMap (IntMap)
 import Data.Isomorphism
 import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map (Map)
 import Data.Maybe (Maybe (..))
 import Data.Monoid qualified as Monoid
 import Data.Ord (Down)
@@ -81,8 +84,10 @@ import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
 import Data.Semigroupoid.Dual (Dual (..))
 import Data.Semigroupoid.Static (Static (..))
+import Data.Sequence (Seq, ViewL, ViewR)
 import Data.Tagged (Tagged)
 import Data.These (These)
+import Data.Tree (Tree)
 #if MIN_VERSION_base(4,16,0)
 import Data.Tuple (Solo)
 #endif
@@ -662,6 +667,20 @@ instance (MapArg2 (->) (->) p) => CategoricalFunctor (Fix p) where
   type Cod (Fix p) = (->)
 
   map f (In p) = In (map2 (map f) (map1 f p))
+
+deriving via (FromFunctor (Map k)) instance CategoricalFunctor (Map k)
+
+deriving via (FromFunctor IntMap) instance CategoricalFunctor IntMap
+
+deriving via (FromFunctor Seq) instance CategoricalFunctor Seq
+
+deriving via (FromFunctor ViewL) instance CategoricalFunctor ViewL
+
+deriving via (FromFunctor ViewR) instance CategoricalFunctor ViewR
+
+deriving via (FromFunctor Tree) instance CategoricalFunctor Tree
+
+deriving via (FromFunctor SCC) instance CategoricalFunctor SCC
 
 --------------------------------------------------------------------------------
 

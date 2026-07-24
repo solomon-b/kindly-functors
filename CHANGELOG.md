@@ -43,6 +43,8 @@
 * Add instances for `Fix` (bifunctors), `Constant` at two arguments, and
   `Dual` (semigroupoids). Add trifunctor instances for `Forget` and `K1`,
   and an `observedTrifunctorLaws` bundle for `map3`.
+* Add instances for `containers` (new dependency): `Map k`, `IntMap`, `Seq`,
+  `ViewL`, `ViewR`, `Tree`, and `SCC`.
 
 ## 0.1.0.1 -- 2024-02-04
 

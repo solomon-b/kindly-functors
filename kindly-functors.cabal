@@ -69,6 +69,7 @@ library
     build-depends:
       base > 4 && < 5,
       bifunctors                    >= 5.6 && < 5.7,
+      containers                    >= 0.6 && < 0.9,
       mtl                           >= 2.2.2 && < 2.4,
       profunctors                   >= 5.6.2 && < 5.7,
       semigroupoids                 >= 6.0.0 && < 6.1,
@@ -109,6 +110,7 @@ test-suite kindly-functors-test
     build-depends:
         base > 4 && < 5,
         bifunctors                    >= 5.6 && < 5.7,
+        containers                    >= 0.6 && < 0.9,
         hspec,
         hedgehog                      >= 1.4 && < 1.6,
         hedgehog-classes              >= 0.2 && < 0.3,

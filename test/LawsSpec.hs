@@ -37,7 +37,10 @@ import Data.Functor.Product qualified as Product
 import Data.Functor.Reverse (Reverse (..))
 import Data.Functor.Sum (Sum (..))
 import Data.Functor.These (These1 (..))
+import Data.Graph (SCC (..))
+import Data.IntMap qualified as IntMap
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map qualified as Map
 import Data.Monoid (Endo (..))
 import Data.Profunctor (Costar (..), Forget (..), Star (..))
 import Data.Profunctor.Cayley (Cayley (..))
@@ -49,8 +52,10 @@ import Data.Profunctor.Strong (Copastro (..), Cotambara (..), Pastro (..), Tamba
 import Data.Profunctor.Traversing (CofreeTraversing (..), FreeTraversing (..))
 import Data.Profunctor.Yoneda (Coyoneda (..), Yoneda (..))
 import Data.Semigroupoid.Dual (Dual (..))
+import Data.Sequence qualified as Seq
 import Data.String (fromString)
 import Data.Tagged (Tagged (..))
+import Data.Tree (Tree (..))
 import GHC.Generics (K1 (..), Par1 (..), Rec1 (..), (:*:) (..))
 import Hedgehog (Gen, Group (..), Property, PropertyName, checkSequential)
 import Hedgehog.Classes (Laws (..))
@@ -370,6 +375,27 @@ obsTaggedP (Tagged b) _ = b
 genFix :: Gen a -> Gen (Fix Either a)
 genFix g = Gen.recursive Gen.choice [In . Right <$> g] [In . Left <$> genFix g]
 
+genMap :: Gen a -> Gen (Map.Map Int a)
+genMap g = Map.fromList <$> genList ((,) <$> genInt <*> g)
+
+genIntMap :: Gen a -> Gen (IntMap.IntMap a)
+genIntMap g = IntMap.fromList <$> genList ((,) <$> genInt <*> g)
+
+genSeq :: Gen a -> Gen (Seq.Seq a)
+genSeq g = Seq.fromList <$> genList g
+
+genViewL :: Gen a -> Gen (Seq.ViewL a)
+genViewL g = Seq.viewl <$> genSeq g
+
+genViewR :: Gen a -> Gen (Seq.ViewR a)
+genViewR g = Seq.viewr <$> genSeq g
+
+genTree :: Gen a -> Gen (Tree a)
+genTree g = Gen.recursive Gen.choice [Node <$> g <*> pure []] [Node <$> g <*> Gen.list (Range.linear 0 3) (genTree g)]
+
+genSCC :: Gen a -> Gen (SCC a)
+genSCC g = Gen.choice [AcyclicSCC <$> g, CyclicSCC <$> Gen.list (Range.linear 1 4) g]
+
 genConstantT :: Gen a -> Gen b -> Gen (Constant a b)
 genConstantT ga _ = Constant <$> ga
 
@@ -486,6 +512,13 @@ tests =
           -- Op as a bifunctor into Op: covariant map2, contravariant map1.
           labeled "Op" (observedBifunctorLaws genOp obsOp),
           labeled "Fix Either" (functorLaws genFix),
+          labeled "Map Int" (functorLaws genMap),
+          labeled "IntMap" (functorLaws genIntMap),
+          labeled "Seq" (functorLaws genSeq),
+          labeled "ViewL" (functorLaws genViewL),
+          labeled "ViewR" (functorLaws genViewR),
+          labeled "Tree" (functorLaws genTree),
+          labeled "SCC" (functorLaws genSCC),
           labeled "Constant" (bifunctorLaws genConstantT),
           labeled "Dual (->) Int" (contravariantFunctorLaws genDual obsDual),
           labeled "Dual (->)" (observedBifunctorLaws genDual obsDual),

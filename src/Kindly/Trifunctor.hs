@@ -11,7 +11,10 @@ where
 --------------------------------------------------------------------------------
 
 import Control.Category
+import Data.Functor.Contravariant (Op)
 import Data.Kind (Constraint, Type)
+import Data.Profunctor (Forget (..))
+import GHC.Generics (K1 (..))
 import Kindly.Bifunctor ()
 import Kindly.Class
 
@@ -55,6 +58,20 @@ instance CategoricalFunctor ((,,,,,) x x' x'') where
 
   map :: (a -> b) -> ((->) ~> (->) ~> (->)) ((,,,,,) x x' x'' a) ((,,,,,) x x' x'' b)
   map f' = Nat (Nat (\(a, b, c, d, e, f) -> (a, b, c, f' d, e, f)))
+
+instance CategoricalFunctor (K1 :: Type -> Type -> Type -> Type) where
+  type Dom K1 = (->)
+  type Cod K1 = (->) ~> (->) ~> (->)
+
+  map _ = Nat (Nat (\(K1 c) -> K1 c))
+
+-- | 'Forget' is a full mixed-variance trifunctor: covariant in its result
+-- @r@, contravariant in its input @a@, and phantom in @b@.
+instance CategoricalFunctor (Forget :: Type -> Type -> Type -> Type) where
+  type Dom Forget = (->)
+  type Cod Forget = Op ~> (->) ~> (->)
+
+  map f = Nat (Nat (\(Forget g) -> Forget (f . g)))
 
 instance CategoricalFunctor ((,,,,,,) x x' x'' x''') where
   type Dom ((,,,,,,) x x' x'' x''') = (->)

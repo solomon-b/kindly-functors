@@ -22,6 +22,7 @@ import Control.Monad.Trans.Identity (IdentityT (..))
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Bifunctor.Biff (Biff (..))
 import Data.Bifunctor.Clown (Clown (..))
+import Data.Bifunctor.Fix (Fix (..))
 import Data.Bifunctor.Flip (Flip (..))
 import Data.Bifunctor.Joker (Joker (..))
 import Data.Bifunctor.Product qualified as BiProduct
@@ -47,9 +48,10 @@ import Data.Profunctor.Mapping (CofreeMapping (..), FreeMapping (..))
 import Data.Profunctor.Strong (Copastro (..), Cotambara (..), Pastro (..), Tambara (..))
 import Data.Profunctor.Traversing (CofreeTraversing (..), FreeTraversing (..))
 import Data.Profunctor.Yoneda (Coyoneda (..), Yoneda (..))
+import Data.Semigroupoid.Dual (Dual (..))
 import Data.String (fromString)
 import Data.Tagged (Tagged (..))
-import GHC.Generics (Par1 (..), Rec1 (..), (:*:) (..))
+import GHC.Generics (K1 (..), Par1 (..), Rec1 (..), (:*:) (..))
 import Hedgehog (Gen, Group (..), Property, PropertyName, checkSequential)
 import Hedgehog.Classes (Laws (..))
 import Hedgehog.Gen qualified as Gen
@@ -63,6 +65,7 @@ import Kindly.Functor.Laws
     functorLaws,
     invariantFunctorLaws,
     observedBifunctorLaws,
+    observedTrifunctorLaws,
     profunctorLaws,
   )
 import Prelude
@@ -364,6 +367,36 @@ genTaggedP = Tagged <$> genInt
 obsTaggedP :: Tagged Int Int -> Int -> Int
 obsTaggedP (Tagged b) _ = b
 
+genFix :: Gen a -> Gen (Fix Either a)
+genFix g = Gen.recursive Gen.choice [In . Right <$> g] [In . Left <$> genFix g]
+
+genConstantT :: Gen a -> Gen b -> Gen (Constant a b)
+genConstantT ga _ = Constant <$> ga
+
+genDual :: Gen (Dual (->) Int Int)
+genDual = (\n -> Dual (+ n)) <$> genInt
+
+obsDual :: Dual (->) Int Int -> Int -> Int
+obsDual (Dual g) = g
+
+genTriple :: Gen (Int, Int, Int)
+genTriple = (,,) <$> genInt <*> genInt <*> genInt
+
+obsTriple :: (Int, Int, Int) -> Int -> (Int, Int, Int)
+obsTriple t _ = t
+
+genForgetT :: Gen (Forget Int Int Int)
+genForgetT = (\n -> Forget (* n)) <$> genInt
+
+obsForgetT :: Forget Int Int Int -> Int -> Int
+obsForgetT (Forget g) = g
+
+genK1 :: Gen (K1 Int Int Int)
+genK1 = K1 <$> genInt
+
+obsK1 :: K1 Int Int Int -> Int -> Int
+obsK1 (K1 c) _ = c
+
 --------------------------------------------------------------------------------
 
 -- | Splice a sublibrary 'Laws' into a hedgehog 'Group', prefixing each property
@@ -451,5 +484,13 @@ tests =
           labeled "Tagged ()" (functorLaws genTagged),
           labeled "Tagged" (profunctorLaws genTaggedP obsTaggedP),
           -- Op as a bifunctor into Op: covariant map2, contravariant map1.
-          labeled "Op" (observedBifunctorLaws genOp obsOp)
+          labeled "Op" (observedBifunctorLaws genOp obsOp),
+          labeled "Fix Either" (functorLaws genFix),
+          labeled "Constant" (bifunctorLaws genConstantT),
+          labeled "Dual (->) Int" (contravariantFunctorLaws genDual obsDual),
+          labeled "Dual (->)" (observedBifunctorLaws genDual obsDual),
+          -- Trifunctors (map3).
+          labeled "(,,)" (observedTrifunctorLaws genTriple obsTriple),
+          labeled "Forget" (observedTrifunctorLaws genForgetT obsForgetT),
+          labeled "K1" (observedTrifunctorLaws genK1 obsK1)
         ]

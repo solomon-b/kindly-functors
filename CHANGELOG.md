@@ -41,6 +41,11 @@
   `Bifunctor (->) Op Op` holds. Neither Hask `Bifunctor` nor `Profunctor` can
   express this shape. An `observedBifunctorLaws` bundle joins the laws
   sublibrary for such function-shaped covariant `map2` instances.
+* Add instances for `Fix` (bifunctors), `Constant` at two arguments, and
+  `Dual` (semigroupoids) — the `Op` generalization, mixed-variance like `Op`.
+  Add trifunctor instances for `Forget` (covariant result, contravariant
+  input, phantom third argument) and `K1`, plus an `observedTrifunctorLaws`
+  bundle giving `map3` its first law coverage.
 
 ## 0.1.0.1 -- 2024-02-04
 

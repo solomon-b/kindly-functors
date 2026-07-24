@@ -42,6 +42,7 @@ import Control.Monad.Trans.Writer.Lazy qualified as Lazy
 import Control.Monad.Trans.Writer.Strict qualified as Strict
 import Data.Bifunctor.Biff (Biff (..))
 import Data.Bifunctor.Clown (Clown (..))
+import Data.Bifunctor.Fix (Fix (..))
 import Data.Bifunctor.Flip (Flip (..))
 import Data.Bifunctor.Joker (Joker (..))
 import Data.Bifunctor.Product qualified as Bifunctor
@@ -78,6 +79,7 @@ import Data.Profunctor.Traversing qualified as Hask.Profunctor
 import Data.Profunctor.Yoneda qualified as Hask.Profunctor
 import Data.Proxy (Proxy)
 import Data.Semigroup qualified as Semigroup
+import Data.Semigroupoid.Dual (Dual (..))
 import Data.Semigroupoid.Static (Static (..))
 import Data.Tagged (Tagged)
 import Data.These (These)
@@ -658,6 +660,12 @@ instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.C
 
 deriving via (FromFunctor (Tagged s)) instance CategoricalFunctor (Tagged s)
 
+instance (MapArg2 (->) (->) p, forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Fix p) where
+  type Dom (Fix p) = (->)
+  type Cod (Fix p) = (->)
+
+  map f (In p) = In (map2 (map f) (map1 f p))
+
 --------------------------------------------------------------------------------
 
 newtype FromContra f a = FromContra (f a)
@@ -680,6 +688,12 @@ deriving via (FromContra Comparison) instance CategoricalFunctor Comparison
 deriving via (FromContra Equivalence) instance CategoricalFunctor Equivalence
 
 deriving via (FromContra (Op a)) instance CategoricalFunctor (Op a)
+
+instance (MapArg2 Op (->) k) => CategoricalFunctor (Dual k a) where
+  type Dom (Dual k a) = Op
+  type Cod (Dual k a) = (->)
+
+  map (Op f) (Dual kba) = Dual (map2 (Op f) kba)
 
 -- NOTE: The remaining 'Hask.Contravariant' instances in base (t'Const',
 -- 'Proxy', 'U1', 'V1', etc.) are phantom in their last parameter and so are

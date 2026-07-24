@@ -40,6 +40,9 @@ module Kindly.Functor.Laws
 
     -- * Profunctors
     profunctorLaws,
+
+    -- * Trifunctors
+    observedTrifunctorLaws,
   )
 where
 
@@ -52,7 +55,7 @@ import Hedgehog (Gen, Property, forAll, forAllWith, property, (===))
 import Hedgehog.Classes (Laws (..))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import Kindly.Class (MapArg1, MapArg2, map1, map2)
+import Kindly.Class (MapArg1, MapArg2, MapArg3, map1, map2, map3)
 import Prelude hiding (id, (.))
 
 --------------------------------------------------------------------------------
@@ -276,6 +279,49 @@ observedBifunctorComposition genP obs = property $ do
   let g = (+ 1) :: Int -> Int
       h = (* 2) :: Int -> Int
   obs (map2 (g . h) p) a === obs (map2 g (map2 h p)) a
+
+--------------------------------------------------------------------------------
+-- Trifunctor
+
+-- | The functor laws for a covariant @'map3'@, observed through @obs@ so the
+-- bundle works for both 'Eq'-comparable trifunctors (observe with @const@)
+-- and function-shaped ones like 'Data.Profunctor.Forget'.
+observedTrifunctorLaws ::
+  forall cat2 cat3 p r.
+  (MapArg3 (->) cat2 cat3 p, Eq r, Show r) =>
+  Gen (p Int Int Int) ->
+  (p Int Int Int -> Int -> r) ->
+  Laws
+observedTrifunctorLaws genP obs =
+  Laws
+    "Trifunctor (observed)"
+    [ ("map3 Identity", observedTrifunctorIdentity genP obs),
+      ("map3 Composition", observedTrifunctorComposition genP obs)
+    ]
+
+observedTrifunctorIdentity ::
+  forall cat2 cat3 p r.
+  (MapArg3 (->) cat2 cat3 p, Eq r, Show r) =>
+  Gen (p Int Int Int) ->
+  (p Int Int Int -> Int -> r) ->
+  Property
+observedTrifunctorIdentity genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  obs (map3 (id :: Int -> Int) p) a === obs p a
+
+observedTrifunctorComposition ::
+  forall cat2 cat3 p r.
+  (MapArg3 (->) cat2 cat3 p, Eq r, Show r) =>
+  Gen (p Int Int Int) ->
+  (p Int Int Int -> Int -> r) ->
+  Property
+observedTrifunctorComposition genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  let g = (+ 1) :: Int -> Int
+      h = (* 2) :: Int -> Int
+  obs (map3 (g . h) p) a === obs (map3 g (map3 h p)) a
 
 --------------------------------------------------------------------------------
 -- Profunctor

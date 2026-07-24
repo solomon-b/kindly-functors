@@ -28,6 +28,7 @@ import Data.Either (Either)
 import Data.Function (flip)
 import Data.Functor qualified as Hask
 import Data.Functor.Const (Const)
+import Data.Functor.Constant (Constant (..))
 import Data.Functor.Contravariant (Op (..))
 import Data.Kind (Constraint, Type)
 import Data.Profunctor qualified as Hask
@@ -40,6 +41,7 @@ import Data.Profunctor.Strong qualified as Hask
 import Data.Profunctor.Traversing qualified as Hask
 import Data.Profunctor.Yoneda qualified as Hask
 import Data.Semigroup qualified as Semigroup
+import Data.Semigroupoid.Dual (Dual (..))
 import Data.Tagged (Tagged (..))
 import Data.These (These)
 import GHC.Generics (K1)
@@ -107,6 +109,12 @@ deriving via (FromBifunctor These) instance CategoricalFunctor These
 deriving via (FromBifunctor Semigroup.Arg) instance CategoricalFunctor Semigroup.Arg
 
 deriving via (FromBifunctor (Const :: Type -> Type -> Type)) instance CategoricalFunctor (Const :: Type -> Type -> Type)
+
+instance CategoricalFunctor (Constant :: Type -> Type -> Type) where
+  type Dom Constant = (->)
+  type Cod Constant = (->) ~> (->)
+
+  map f = Nat (\(Constant a) -> Constant (f a))
 
 deriving via (FromBifunctor (K1 i :: Type -> Type -> Type)) instance CategoricalFunctor (K1 i :: Type -> Type -> Type)
 
@@ -348,3 +356,12 @@ instance CategoricalFunctor Op where
   type Cod Op = Op ~> (->)
 
   map f = Nat (\(Op g) -> Op (f . g))
+
+-- | 'Dual' generalizes t'Op': @'Dual' ('->')@ /is/ t'Op' up to newtype
+-- wrapping, and for any profunctorial @k@ the partial applications are
+-- contravariant while @'map2'@ is covariant.
+instance (forall x. MapArg1 (->) (k x)) => CategoricalFunctor (Dual k :: Type -> Type -> Type) where
+  type Dom (Dual k) = (->)
+  type Cod (Dual k) = Op ~> (->)
+
+  map f = Nat (\(Dual kba) -> Dual (map1 f kba))

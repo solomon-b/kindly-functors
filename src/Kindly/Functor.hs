@@ -657,7 +657,7 @@ instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.C
 
 deriving via (FromFunctor (Tagged s)) instance CategoricalFunctor (Tagged s)
 
-instance (MapArg2 (->) (->) p, forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Fix p) where
+instance (MapArg2 (->) (->) p) => CategoricalFunctor (Fix p) where
   type Dom (Fix p) = (->)
   type Cod (Fix p) = (->)
 

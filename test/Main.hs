@@ -13,8 +13,10 @@ import Control.Arrow (Kleisli (..))
 import Control.Monad (when)
 import Data.Functor.Contravariant (Op (..), Predicate (..))
 import Data.Functor.Identity (Identity (..))
+import Data.Isomorphism (Iso (Iso))
 import Data.Maybe (maybeToList)
 import Data.Monoid (Endo (..))
+import Data.Profunctor (Star (..))
 import Kindly qualified as UUT
 import LawsSpec qualified
 import Rank2LawsSpec qualified
@@ -50,6 +52,29 @@ exampleSpec = do
   describe "invmap" $ do
     it "works invariantly (Endo)" $ do
       appEndo (UUT.invmap (+ 1) (subtract 1) (Endo (* 2))) (5 :: Int) `shouldBe` 9
+    it "works covariantly (Identity), dropping the backward leg" $ do
+      UUT.invmap (show :: Int -> String) (read :: String -> Int) (Identity (5 :: Int)) `shouldBe` Identity "5"
+    it "works contravariantly (Predicate), dropping the forward leg" $ do
+      getPredicate (UUT.invmap (show :: Int -> String) (read :: String -> Int) (Predicate even)) "4" `shouldBe` True
+      getPredicate (UUT.invmap (show :: Int -> String) (read :: String -> Int) (Predicate even)) "5" `shouldBe` False
+
+  describe "mapIso" $ do
+    it "maps an iso through a covariant functor (Identity)" $ do
+      UUT.mapIso (Iso (show :: Int -> String) (read :: String -> Int)) (Identity (5 :: Int)) `shouldBe` Identity "5"
+    it "maps an iso through a contravariant functor (Predicate)" $ do
+      getPredicate (UUT.mapIso (Iso (show :: Int -> String) (read :: String -> Int)) (Predicate even)) "4" `shouldBe` True
+    it "maps an iso through an invariant functor (Endo)" $ do
+      appEndo (UUT.mapIso (Iso (+ 1) (subtract 1)) (Endo (* 2))) (5 :: Int) `shouldBe` 9
+
+  describe "liftIso (Star)" $ do
+    it "wraps the forward leg in pure, dropping the backward leg" $ do
+      runStar (UUT.liftIso (Iso (show :: Int -> String) (read :: String -> Int)) :: Star Maybe Int String) 5 `shouldBe` Just "5"
+    it "sends an identity iso to the Kleisli identity" $ do
+      runStar (UUT.liftIso (Iso id id :: Iso (->) Int Int) :: Star Maybe Int Int) 5 `shouldBe` Just 5
+
+  describe "liftIso (Kleisli)" $ do
+    it "wraps the forward leg in pure, dropping the backward leg" $ do
+      runKleisli (UUT.liftIso (Iso (show :: Int -> String) (read :: String -> Int)) :: Kleisli Maybe Int String) 5 `shouldBe` Just "5"
 
   describe "lmap" $ do
     it "works covariantly" $ do

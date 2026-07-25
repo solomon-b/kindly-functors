@@ -45,6 +45,15 @@
   and an `observedTrifunctorLaws` bundle for `map3`.
 * Add instances for `containers` (new dependency): `Map k`, `IntMap`, `Seq`,
   `ViewL`, `ViewR`, `Tree`, and `SCC`.
+* Generalize `invmap` to functors of any variance and add `mapIso`, both backed
+  by a new `LiftIso` class in `Kindly.Class` that reflects a `(->)` isomorphism
+  into an arbitrary category. `invmap` and `mapIso` now resolve for covariant
+  and contravariant functors, not just invariant ones, dropping the leg the
+  functor cannot use. The domain category is fixed by the functor argument, so
+  existing invariant call sites are unchanged. Add `liftIsoLaws` and
+  `mapIsoLaws` bundles to the laws sublibrary. `LiftIso` instances cover `(->)`,
+  `Op`, `Iso (->)`, and the Kleisli categories `Star f` and `Kleisli f` (for
+  `Monad f`). `Star Maybe` is the domain of a `Filterable` functor.
 
 ## 0.1.0.1 -- 2024-02-04
 

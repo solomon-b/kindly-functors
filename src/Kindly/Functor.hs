@@ -6,6 +6,7 @@ module Kindly.Functor
   ( Functor,
     fmap,
     contramap,
+    mapIso,
     invmap,
     Filterable,
     mapMaybe,
@@ -126,13 +127,24 @@ fmap = map1
 contramap :: (Functor Op p) => (a -> b) -> p b -> p a
 contramap = fmap . Op
 
--- | A specialization of 'fmap' for invariant functors as defined
--- in 'Data.Functor.Invariant.'
+-- | Map a @('->')@ isomorphism through a 'Functor' of /any/ variance. A functor
+-- can always transport an isomorphism. 'liftIso' reflects the iso into the
+-- functor's domain category @cat@, dropping whichever leg @cat@ ignores (the
+-- backward leg for a covariant @('->')@ functor, the forward leg for a
+-- contravariant 'Op' one, neither for an invariant @'Iso' ('->')@ one).
 --
--- TODO: Do we keep this around? This is nice to have so that library
--- users don't have to manually pack functions in t'Iso'.
-invmap :: (Functor (Iso (->)) f) => (a -> b) -> (b -> a) -> f a -> f b
-invmap f g = fmap (Iso f g)
+-- 'mapIso' generalizes 'invmap'. @'invmap' f g = 'mapIso' ('Iso' f g)@.
+mapIso :: (Functor cat f, LiftIso cat) => Iso (->) a b -> f a -> f b
+mapIso i = fmap (liftIso i)
+
+-- | Map an isomorphism through a 'Functor' of /any/ variance, generalizing the
+-- invariant-only version. The two legs are packed into an @'Iso' ('->')@ and
+-- mapped with 'mapIso', so 'invmap' now resolves for covariant and
+-- contravariant functors too, not just invariant ones. The domain category is
+-- fixed by the functor argument, so existing invariant call sites are
+-- unaffected.
+invmap :: (Functor cat f, LiftIso cat) => (a -> b) -> (b -> a) -> f a -> f b
+invmap f g = mapIso (Iso f g)
 
 -- TODO: 'Filterable' is currently unusable due to fundeps. This can
 -- be fixed by making it @FunctorOf (Hask.Star Maybe) (->) p@, but I

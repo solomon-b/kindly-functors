@@ -97,14 +97,16 @@ exampleSpec = do
     it "works covariantly" $ do
       UUT.trimap show show show (True, False, ()) `shouldBe` ("True", "False", "()")
 
-  describe "bmap" $ do
-    it "works" $ do
+  describe "bmap1" $ do
+    it "maps the rightmost functor" $ do
       let hkd = MyHKD (Just True) Nothing
-      project (UUT.bmap maybeToList hkd) `shouldBe` ([True], [])
+      project (UUT.bmap1 maybeToList hkd) `shouldBe` ([True], [])
 
-  describe "bmap2" $ do
-    it "works" $ do
-      field (UUT.bmap2 (\(a, _) -> Left a) (MyHKD2 ((), True))) `shouldBe` (Left () :: Either () Bool)
+  describe "bmap2 / bmap1 on a two-functor HKD" $ do
+    it "bmap2 hits the first parameter" $ do
+      projeH2a (UUT.bmap2 maybeToList (MyHKD2 (Just True) (Just 1))) `shouldBe` ([True], Just (1 :: Int))
+    it "bmap1 hits the second parameter" $ do
+      projeH2b (UUT.bmap1 maybeToList (MyHKD2 (Just True) (Just 1))) `shouldBe` (Just True, [1 :: Int])
 
 --------------------------------------------------------------------------------
 -- Rank-2 witnesses
@@ -121,11 +123,22 @@ instance UUT.CategoricalFunctor MyHKD where
   map :: (UUT.Nat (->) (->)) f g -> MyHKD f -> MyHKD g
   map (UUT.Nat nat) MyHKD {..} = MyHKD (nat one) (nat two)
 
-newtype MyHKD2 p = MyHKD2 {field :: p () Bool}
+data MyHKD2 f g = MyHKD2 (f Bool) (g Int)
+
+projeH2a :: MyHKD2 [] Maybe -> ([Bool], Maybe Int)
+projeH2a (MyHKD2 a b) = (a, b)
+
+projeH2b :: MyHKD2 Maybe [] -> (Maybe Bool, [Int])
+projeH2b (MyHKD2 a b) = (a, b)
+
+instance UUT.CategoricalFunctor (MyHKD2 f) where
+  type Dom (MyHKD2 f) = (->) UUT.~> (->)
+  type Cod (MyHKD2 f) = (->)
+
+  map (UUT.Nat nat) (MyHKD2 a b) = MyHKD2 a (nat b)
 
 instance UUT.CategoricalFunctor MyHKD2 where
-  type Dom MyHKD2 = (->) UUT.~> ((->) UUT.~> (->))
-  type Cod MyHKD2 = (->)
+  type Dom MyHKD2 = (->) UUT.~> (->)
+  type Cod MyHKD2 = ((->) UUT.~> (->)) UUT.~> (->)
 
-  map :: UUT.Dom MyHKD2 p q -> MyHKD2 p -> MyHKD2 q
-  map (UUT.Nat (UUT.Nat nat)) MyHKD2 {..} = MyHKD2 (nat field)
+  map (UUT.Nat nat) = UUT.Nat (\(MyHKD2 a b) -> MyHKD2 (nat a) b)

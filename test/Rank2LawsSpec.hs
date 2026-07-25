@@ -9,61 +9,113 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- | Self-test for @kindly-functors:laws@' rank-2 (higher-kinded) bundles. Runs
--- 'bmapLaws' and 'bmap2Laws' against witness functors whose natural
--- endo-transformations are non-trivial. They carry lists, so @reverse@ and
--- @drop@ give genuine, composition-distinguishing morphisms.
+-- | Self-test for @kindly-functors:laws@' rank-2 bundles. Runs 'bmap1Laws',
+-- 'bmap2Laws', and 'bmap3Laws' against covariant one-, two-, and three-functor
+-- witnesses, plus a contravariant and an invariant witness, so the reused
+-- bundles exercise every variance. The witnesses carry lists, so @reverse@ and
+-- @drop 1@ give genuine, composition-distinguishing natural transformations.
+-- The contravariant and invariant witnesses hold functions, so they are compared
+-- by observation against fixed probe inputs.
 module Rank2LawsSpec (tests) where
 
 --------------------------------------------------------------------------------
 
+import Data.Functor.Contravariant (Op (..))
+import Data.Isomorphism (Iso (..), embed, project)
 import Data.String (fromString)
 import Hedgehog (Gen, Group (..), Property, PropertyName, checkSequential)
 import Hedgehog.Classes (Laws (..))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
 import Kindly (CategoricalFunctor (..), Nat (..), type (~>))
-import Kindly.Rank2.Laws (bmap2Laws, bmapLaws)
+import Kindly.Rank2.Laws (bmap1Laws, bmap2Laws, bmap3Laws)
 import Prelude
 
 --------------------------------------------------------------------------------
--- Witness rank-2 functor over @f :: Type -> Type@.
+-- Covariant witnesses (one, two, three functor parameters)
 
-data HKD f = HKD (f Bool) (f Int)
+data H1 f = H1 (f Bool) (f Int)
 
-deriving instance (Eq (f Bool), Eq (f Int)) => Eq (HKD f)
+deriving instance (Eq (f Bool), Eq (f Int)) => Eq (H1 f)
 
-deriving instance (Show (f Bool), Show (f Int)) => Show (HKD f)
+deriving instance (Show (f Bool), Show (f Int)) => Show (H1 f)
 
-instance CategoricalFunctor HKD where
-  type Dom HKD = (->) ~> (->)
-  type Cod HKD = (->)
+instance CategoricalFunctor H1 where
+  type Dom H1 = (->) ~> (->)
+  type Cod H1 = (->)
+  map :: Nat (->) (->) f g -> H1 f -> H1 g
+  map (Nat nat) (H1 a b) = H1 (nat a) (nat b)
 
-  map :: (Nat (->) (->)) f g -> HKD f -> HKD g
-  map (Nat nat) (HKD a b) = HKD (nat a) (nat b)
+data H2 f g = H2 (f Bool) (g Int)
 
--- Witness bifunctor with non-trivial natural endomorphisms.
+deriving instance (Eq (f Bool), Eq (g Int)) => Eq (H2 f g)
 
-data BiList x y = BiList [x] [y]
+deriving instance (Show (f Bool), Show (g Int)) => Show (H2 f g)
 
-deriving instance (Eq x, Eq y) => Eq (BiList x y)
+instance CategoricalFunctor (H2 f) where
+  type Dom (H2 f) = (->) ~> (->)
+  type Cod (H2 f) = (->)
+  map (Nat nat) (H2 a b) = H2 a (nat b)
 
-deriving instance (Show x, Show y) => Show (BiList x y)
+instance CategoricalFunctor H2 where
+  type Dom H2 = (->) ~> (->)
+  type Cod H2 = ((->) ~> (->)) ~> (->)
+  map (Nat nat) = Nat (\(H2 a b) -> H2 (nat a) b)
 
--- Witness rank-2 functor over @p :: Type -> Type -> Type@.
+data H3 f g h = H3 (f Bool) (g Int) (h Bool)
 
-newtype HKD2 p = HKD2 (p Bool Int)
+deriving instance (Eq (f Bool), Eq (g Int), Eq (h Bool)) => Eq (H3 f g h)
 
-deriving instance (Eq (p Bool Int)) => Eq (HKD2 p)
+deriving instance (Show (f Bool), Show (g Int), Show (h Bool)) => Show (H3 f g h)
 
-deriving instance (Show (p Bool Int)) => Show (HKD2 p)
+instance CategoricalFunctor (H3 f g) where
+  type Dom (H3 f g) = (->) ~> (->)
+  type Cod (H3 f g) = (->)
+  map (Nat nat) (H3 a b c) = H3 a b (nat c)
 
-instance CategoricalFunctor HKD2 where
-  type Dom HKD2 = (->) ~> ((->) ~> (->))
-  type Cod HKD2 = (->)
+instance CategoricalFunctor (H3 f) where
+  type Dom (H3 f) = (->) ~> (->)
+  type Cod (H3 f) = ((->) ~> (->)) ~> (->)
+  map (Nat nat) = Nat (\(H3 a b c) -> H3 a (nat b) c)
 
-  map :: Dom HKD2 p q -> HKD2 p -> HKD2 q
-  map (Nat (Nat nat)) (HKD2 p) = HKD2 (nat p)
+instance CategoricalFunctor H3 where
+  type Dom H3 = (->) ~> (->)
+  type Cod H3 = ((->) ~> (->)) ~> ((->) ~> (->)) ~> (->)
+  map (Nat nat) = Nat (Nat (\(H3 a b c) -> H3 (nat a) b c))
+
+--------------------------------------------------------------------------------
+-- Contravariant and invariant witnesses (function-shaped, over lists)
+
+newtype Consumer f = Consumer (f Int -> Int)
+
+instance CategoricalFunctor Consumer where
+  type Dom Consumer = (->) ~> Op
+  type Cod Consumer = (->)
+  map (Nat opnat) (Consumer c) = Consumer (\g -> c (getOp opnat g))
+
+newtype Endo1 f = Endo1 (f Int -> f Int)
+
+instance CategoricalFunctor Endo1 where
+  type Dom Endo1 = (->) ~> Iso (->)
+  type Cod Endo1 = (->)
+  map (Nat iso) (Endo1 h) = Endo1 (\g -> embed iso (h (project iso g)))
+
+-- Observation: compare function-shaped witnesses by running them on probes.
+
+consumerProbes :: [[Int]]
+consumerProbes = [[], [0], [1, 2], [3, 4, 5]]
+
+instance Eq (Consumer []) where
+  Consumer p == Consumer q = fmap p consumerProbes == fmap q consumerProbes
+
+instance Show (Consumer []) where
+  show (Consumer p) = "Consumer " <> show (fmap p consumerProbes)
+
+instance Eq (Endo1 []) where
+  Endo1 p == Endo1 q = fmap p consumerProbes == fmap q consumerProbes
+
+instance Show (Endo1 []) where
+  show (Endo1 p) = "Endo1 " <> show (fmap p consumerProbes)
 
 --------------------------------------------------------------------------------
 -- Generators and sample natural transformations
@@ -74,17 +126,36 @@ genInt = Gen.int (Range.linear (-100) 100)
 genList :: Gen a -> Gen [a]
 genList = Gen.list (Range.linear 0 4)
 
-genHKD :: Gen (HKD [])
-genHKD = HKD <$> genList Gen.bool <*> genList genInt
+genH1 :: Gen (H1 [])
+genH1 = H1 <$> genList Gen.bool <*> genList genInt
 
-genHKD2 :: Gen (HKD2 BiList)
-genHKD2 = (\xs ys -> HKD2 (BiList xs ys)) <$> genList Gen.bool <*> genList genInt
+genH2 :: Gen (H2 [] [])
+genH2 = H2 <$> genList Gen.bool <*> genList genInt
 
-biReverse :: BiList x y -> BiList x y
-biReverse (BiList xs ys) = BiList (reverse xs) (reverse ys)
+genH3 :: Gen (H3 [] [] [])
+genH3 = H3 <$> genList Gen.bool <*> genList genInt <*> genList Gen.bool
 
-biDrop :: BiList x y -> BiList x y
-biDrop (BiList xs ys) = BiList (drop 1 xs) ys
+genConsumer :: Gen (Consumer [])
+genConsumer = Gen.element [Consumer sum, Consumer length, Consumer (sum . drop 1)]
+
+genEndo1 :: Gen (Endo1 [])
+genEndo1 = Gen.element [Endo1 id, Endo1 reverse, Endo1 (drop 1)]
+
+-- Covariant samples: natural transformations @forall x. [x] -> [x]@.
+-- Contravariant samples: the same wrapped in @Op@.
+-- Invariant samples: paired legs in @Iso (->)@.
+
+opReverse :: forall x. Op [x] [x]
+opReverse = Op reverse
+
+opDrop :: forall x. Op [x] [x]
+opDrop = Op (drop 1)
+
+isoReverse :: forall x. Iso (->) [x] [x]
+isoReverse = Iso reverse reverse
+
+isoDrop :: forall x. Iso (->) [x] [x]
+isoDrop = Iso (drop 1) (drop 1)
 
 --------------------------------------------------------------------------------
 
@@ -96,6 +167,12 @@ tests =
   checkSequential $
     Group "Rank-2 functor laws" $
       concat
-        [ labeled "HKD []" (bmapLaws genHKD reverse (drop 1)),
-          labeled "HKD2 BiList" (bmap2Laws genHKD2 biReverse biDrop)
+        [ labeled "H1 [] bmap1" (bmap1Laws genH1 reverse (drop 1)),
+          labeled "H2 [] [] bmap1" (bmap1Laws genH2 reverse (drop 1)),
+          labeled "H2 [] [] bmap2" (bmap2Laws genH2 reverse (drop 1)),
+          labeled "H3 [] [] [] bmap1" (bmap1Laws genH3 reverse (drop 1)),
+          labeled "H3 [] [] [] bmap2" (bmap2Laws genH3 reverse (drop 1)),
+          labeled "H3 [] [] [] bmap3" (bmap3Laws genH3 reverse (drop 1)),
+          labeled "Consumer [] bmap1 (contravariant)" (bmap1Laws genConsumer opReverse opDrop),
+          labeled "Endo1 [] bmap1 (invariant)" (bmap1Laws genEndo1 isoReverse isoDrop)
         ]

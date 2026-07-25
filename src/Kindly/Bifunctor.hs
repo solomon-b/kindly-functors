@@ -5,6 +5,8 @@
 module Kindly.Bifunctor
   ( Bifunctor,
     bimap,
+    bimapIso,
+    Iso (..),
     lmap,
     rmap,
   )
@@ -30,6 +32,7 @@ import Data.Functor qualified as Hask
 import Data.Functor.Const (Const)
 import Data.Functor.Constant (Constant (..))
 import Data.Functor.Contravariant (Op (..))
+import Data.Isomorphism (Iso (..))
 import Data.Kind (Constraint, Type)
 import Data.Profunctor qualified as Hask
 import Data.Profunctor.Cayley qualified as Hask
@@ -59,6 +62,22 @@ type Bifunctor cat1 cat2 p = (MapArg2 cat1 cat2 p, forall x. MapArg1 cat2 (p x))
 -- function @p a b -> p a' b'@.
 bimap :: forall cat1 cat2 p. (Bifunctor cat1 cat2 p) => forall a b a' b'. (a `cat1` a') -> (b `cat2` b') -> p a b -> p a' b'
 bimap f g = map2 f . map1 g
+
+-- | Map a @('->')@ isomorphism through each position of a 'Bifunctor',
+-- regardless of that position's variance. A bifunctor can always transport an
+-- isomorphism in either argument, so 'liftIso' reflects each iso into that
+-- position's category and drops whichever leg the category ignores. The first
+-- 'Iso' maps the first type argument, the second the second.
+--
+-- 'bimapIso' is to 'bimap' what 'Kindly.Functor.mapIso' is to
+-- 'Kindly.Functor.fmap'.
+bimapIso ::
+  (Bifunctor cat1 cat2 p, LiftIso cat1, LiftIso cat2) =>
+  Iso (->) a a' ->
+  Iso (->) b b' ->
+  p a b ->
+  p a' b'
+bimapIso i j = bimap (liftIso i) (liftIso j)
 
 -- | Lift a morphism @cat1 a b@ into a function @p a x -> p b x@.
 lmap :: (Category cat2, Bifunctor cat1 cat2 p) => (a `cat1` b) -> p a x -> p b x

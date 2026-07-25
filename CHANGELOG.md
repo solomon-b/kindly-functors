@@ -54,6 +54,14 @@
   `mapIsoLaws` bundles to the laws sublibrary. `LiftIso` instances cover `(->)`,
   `Op`, `Iso (->)`, and the Kleisli categories `Star f` and `Kleisli f` (for
   `Monad f`). `Star Maybe` is the domain of a `Filterable` functor.
+* Add `bimapIso` and `trimapIso`, the bifunctor and trifunctor analogs of
+  `mapIso`. Each maps a `(->)` isomorphism through every position of a
+  bifunctor/trifunctor regardless of that position's variance, taking one `Iso`
+  per position and reflecting it into that position's category with `liftIso`.
+  Add `bimapIsoLaws` and `trimapIsoLaws` bundles to the laws sublibrary.
+  Re-export `Iso` from `Kindly.Functor`, `Kindly.Bifunctor`, `Kindly.Trifunctor`,
+  and `Kindly` so callers of `mapIso`/`bimapIso`/`trimapIso` can build
+  isomorphisms without importing `Data.Isomorphism` directly.
 
 ## 0.1.0.1 -- 2024-02-04
 

@@ -8,6 +8,7 @@ module Kindly.Functor
     contramap,
     mapIso,
     invmap,
+    Iso (..),
     Filterable,
     mapMaybe,
     catMaybes,

@@ -16,11 +16,23 @@ module Kindly.Rank2
     bmap1,
     bmap2,
     bmap3,
+
+    -- * Contravariant wrappers
+    bcontramap1,
+    bcontramap2,
+    bcontramap3,
+
+    -- * Invariant wrappers
+    binvmap1,
+    binvmap2,
+    binvmap3,
   )
 where
 
 --------------------------------------------------------------------------------
 
+import Data.Functor.Contravariant (Op (..))
+import Data.Isomorphism (Iso (..))
 import Kindly.Class
 
 --------------------------------------------------------------------------------
@@ -46,3 +58,33 @@ bmap2 n = map2 (Nat n)
 -- | Map the third-from-right functor parameter of a rank-2 type.
 bmap3 :: (MapArg3 (c ~> d) e e' b) => (forall x. d (f x) (g x)) -> b f h i -> b g h i
 bmap3 n = map3 (Nat n)
+
+--------------------------------------------------------------------------------
+-- Contravariant wrappers
+
+-- | Map the rightmost parameter of a type contravariant in it.
+bcontramap1 :: (MapArg1 (c ~> Op) b) => (forall x. g x -> f x) -> b f -> b g
+bcontramap1 n = bmap1 (Op n)
+
+-- | Map the second-from-right parameter of a type contravariant in it.
+bcontramap2 :: (MapArg2 (c ~> Op) e b) => (forall x. g x -> f x) -> b f h -> b g h
+bcontramap2 n = bmap2 (Op n)
+
+-- | Map the third-from-right parameter of a type contravariant in it.
+bcontramap3 :: (MapArg3 (c ~> Op) e e' b) => (forall x. g x -> f x) -> b f h i -> b g h i
+bcontramap3 n = bmap3 (Op n)
+
+--------------------------------------------------------------------------------
+-- Invariant wrappers
+
+-- | Map the rightmost parameter of a type invariant in it, supplying both legs.
+binvmap1 :: (MapArg1 (c ~> Iso (->)) b) => (forall x. f x -> g x) -> (forall x. g x -> f x) -> b f -> b g
+binvmap1 fwd bwd = bmap1 (Iso fwd bwd)
+
+-- | Map the second-from-right parameter of a type invariant in it.
+binvmap2 :: (MapArg2 (c ~> Iso (->)) e b) => (forall x. f x -> g x) -> (forall x. g x -> f x) -> b f h -> b g h
+binvmap2 fwd bwd = bmap2 (Iso fwd bwd)
+
+-- | Map the third-from-right parameter of a type invariant in it.
+binvmap3 :: (MapArg3 (c ~> Iso (->)) e e' b) => (forall x. f x -> g x) -> (forall x. g x -> f x) -> b f h i -> b g h i
+binvmap3 fwd bwd = bmap3 (Iso fwd bwd)

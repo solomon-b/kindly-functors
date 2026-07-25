@@ -14,7 +14,11 @@
 -- functor's /domain/ 'Category'. 'functorLaws' works at @('->')@ (covariant),
 -- 'contravariantFunctorLaws' at @'Op'@, 'invariantFunctorLaws' at
 -- @'Iso' ('->')@. 'bifunctorLaws' and 'profunctorLaws' also cover @'map2'@,
--- at the @('->')@ and 'Op' domains respectively.
+-- at the @('->')@ and 'Op' domains respectively. 'mapIsoLaws' checks
+-- @'Kindly.Functor.mapIso'@, which maps an isomorphism through a functor of any
+-- variance, so one bundle serves all three domains. 'liftIsoLaws' checks
+-- 'liftIso' itself at any target category, covering the 'LiftIso' instances no
+-- exported functor witnesses (e.g. @Star f@ and @Kleisli m@).
 --
 -- The bundles are separate functions because the comparison differs. Covariant
 -- functors compare directly with 'Eq'. Contravariant and invariant functors
@@ -33,6 +37,10 @@ module Kindly.Functor.Laws
 
     -- * Invariant functors
     invariantFunctorLaws,
+
+    -- * Isomorphism mapping (any variance)
+    liftIsoLaws,
+    mapIsoLaws,
 
     -- * Covariant bifunctors
     bifunctorLaws,
@@ -55,7 +63,8 @@ import Hedgehog (Gen, Property, forAll, forAllWith, property, (===))
 import Hedgehog.Classes (Laws (..))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import Kindly.Class (MapArg1, MapArg2, MapArg3, map1, map2, map3)
+import Kindly.Class (LiftIso, MapArg1, MapArg2, MapArg3, liftIso, map1, map2, map3)
+import Kindly.Functor (mapIso)
 import Prelude hiding (id, (.))
 
 --------------------------------------------------------------------------------
@@ -193,6 +202,93 @@ invariantComposition genF obs = property $ do
   let g = Iso (+ 1) (subtract 1) :: Iso (->) Int Int
       h = Iso (* 2) (`div` 2) :: Iso (->) Int Int
   obs (map1 (g . h) fa) a === obs (map1 g (map1 h fa)) a
+
+--------------------------------------------------------------------------------
+-- Isomorphism mapping (any variance)
+
+-- | The functor laws for 'liftIso', the identity-on-objects functor from the
+-- @'Iso' ('->')@ groupoid into a target category @cat@. Identity
+-- (@'liftIso' 'id' = 'id'@) and composition
+-- (@'liftIso' (i '.' j) = 'liftIso' i '.' 'liftIso' j@), with @'id'@ and @('.')@
+-- on the left in @'Iso' ('->')@ and on the right in @cat@. A @cat a b@ morphism
+-- is usually neither 'Eq' nor 'Show', so it is observed through @obs@ at the
+-- 'Int' witness. The target @cat@ is recovered from @obs@, so this bundle covers
+-- every 'LiftIso' instance, including those no exported functor witnesses.
+liftIsoLaws ::
+  forall cat r.
+  (LiftIso cat, Eq r, Show r) =>
+  (cat Int Int -> Int -> r) ->
+  Laws
+liftIsoLaws obs =
+  Laws
+    "liftIso"
+    [ ("Identity", liftIsoIdentity obs),
+      ("Composition", liftIsoComposition obs)
+    ]
+
+liftIsoIdentity ::
+  forall cat r.
+  (LiftIso cat, Eq r, Show r) =>
+  (cat Int Int -> Int -> r) ->
+  Property
+liftIsoIdentity obs = property $ do
+  a <- forAll genInt
+  obs (liftIso (id :: Iso (->) Int Int)) a === obs (id :: cat Int Int) a
+
+liftIsoComposition ::
+  forall cat r.
+  (LiftIso cat, Eq r, Show r) =>
+  (cat Int Int -> Int -> r) ->
+  Property
+liftIsoComposition obs = property $ do
+  a <- forAll genInt
+  let i = Iso (+ 1) (subtract 1) :: Iso (->) Int Int
+      j = Iso (* 2) (`div` 2) :: Iso (->) Int Int
+  obs (liftIso (i . j)) a === obs (liftIso i . liftIso j) a
+
+-- | The functor laws stated through @'mapIso'@, which maps a @('->')@
+-- isomorphism through a functor of /any/ variance. Identity
+-- (@'mapIso' 'id' = 'id'@) and composition
+-- (@'mapIso' (i '.' j) = 'mapIso' i '.' 'mapIso' j@), with @'id'@ and @('.')@ in
+-- the @'Iso' ('->')@ groupoid, observed through @obs@. The functor's domain
+-- category is recovered from @f@, so one bundle covers covariant, contravariant,
+-- and invariant functors.
+mapIsoLaws ::
+  forall cat f r.
+  (MapArg1 cat f, LiftIso cat, Eq r, Show r) =>
+  Gen (f Int) ->
+  (f Int -> Int -> r) ->
+  Laws
+mapIsoLaws genF obs =
+  Laws
+    "mapIso"
+    [ ("Identity", mapIsoIdentity genF obs),
+      ("Composition", mapIsoComposition genF obs)
+    ]
+
+mapIsoIdentity ::
+  forall cat f r.
+  (MapArg1 cat f, LiftIso cat, Eq r, Show r) =>
+  Gen (f Int) ->
+  (f Int -> Int -> r) ->
+  Property
+mapIsoIdentity genF obs = property $ do
+  fa <- forAllWith (const "<opaque>") genF
+  a <- forAll genInt
+  obs (mapIso (id :: Iso (->) Int Int) fa) a === obs fa a
+
+mapIsoComposition ::
+  forall cat f r.
+  (MapArg1 cat f, LiftIso cat, Eq r, Show r) =>
+  Gen (f Int) ->
+  (f Int -> Int -> r) ->
+  Property
+mapIsoComposition genF obs = property $ do
+  fa <- forAllWith (const "<opaque>") genF
+  a <- forAll genInt
+  let i = Iso (+ 1) (subtract 1) :: Iso (->) Int Int
+      j = Iso (* 2) (`div` 2) :: Iso (->) Int Int
+  obs (mapIso (i . j) fa) a === obs (mapIso i (mapIso j fa)) a
 
 --------------------------------------------------------------------------------
 -- Covariant bifunctor

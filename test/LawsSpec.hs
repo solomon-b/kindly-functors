@@ -39,6 +39,7 @@ import Data.Functor.Sum (Sum (..))
 import Data.Functor.These (These1 (..))
 import Data.Graph (SCC (..))
 import Data.IntMap qualified as IntMap
+import Data.Isomorphism (Iso (..))
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map qualified as Map
 import Data.Monoid (Endo (..))
@@ -69,6 +70,8 @@ import Kindly.Functor.Laws
     contravariantFunctorLaws,
     functorLaws,
     invariantFunctorLaws,
+    liftIsoLaws,
+    mapIsoLaws,
     observedBifunctorLaws,
     observedTrifunctorLaws,
     profunctorLaws,
@@ -92,6 +95,13 @@ genNonEmpty = Gen.nonEmpty (Range.linear 1 4)
 
 genIdentity :: Gen a -> Gen (Identity a)
 genIdentity g = Identity <$> g
+
+obsIdentity :: Identity Int -> Int -> Int
+obsIdentity (Identity x) _ = x
+
+-- Observe an @Iso (->)@ morphism by running both legs.
+obsIsoCat :: Iso (->) Int Int -> Int -> (Int, Int)
+obsIsoCat i a = (embed i a, project i a)
 
 -- Structural and generic-representation functors.
 
@@ -461,6 +471,16 @@ tests =
           labeled "Equivalence" (contravariantFunctorLaws genEquivalence obsEquivalence),
           labeled "Op Int" (contravariantFunctorLaws genOp obsOp),
           labeled "Endo" (invariantFunctorLaws genEndo obsEndo),
+          -- mapIso across all three variances (isomorphism mapping).
+          labeled "mapIso Identity" (mapIsoLaws (genIdentity genInt) obsIdentity),
+          labeled "mapIso Predicate" (mapIsoLaws genPredicate obsPredicate),
+          labeled "mapIso Endo" (mapIsoLaws genEndo obsEndo),
+          -- liftIso: the core-groupoid inclusion at each target category.
+          labeled "liftIso (->)" (liftIsoLaws obsFn),
+          labeled "liftIso Op" (liftIsoLaws obsOp),
+          labeled "liftIso Iso (->)" (liftIsoLaws obsIsoCat),
+          labeled "liftIso Star Maybe" (liftIsoLaws obsStar),
+          labeled "liftIso Kleisli Maybe" (liftIsoLaws obsKleisli),
           -- Covariant bifunctors (map2).
           labeled "(,)" (bifunctorLaws genPairT),
           labeled "Either" (bifunctorLaws genEitherT),

@@ -4,8 +4,12 @@ module Kindly.Class where
 
 --------------------------------------------------------------------------------
 
+import Control.Arrow (Kleisli (..))
 import Control.Category
+import Data.Functor.Contravariant (Op (..))
+import Data.Isomorphism (Iso (..))
 import Data.Kind (Constraint)
+import Data.Profunctor (Star (..))
 import Data.Semigroupoid (Semigroupoid (..))
 #if MIN_VERSION_base(4,17,0)
 -- On GHC 9.4+ (@base >= 4.17@) @~@ is an ordinary type operator rather than
@@ -13,7 +17,7 @@ import Data.Semigroupoid (Semigroupoid (..))
 -- Earlier GHCs still treat @~@ as built-in syntax and do not export it.
 import Data.Type.Equality (type (~))
 #endif
-import GHC.Base (Type)
+import GHC.Base (Monad, Type, pure)
 
 --------------------------------------------------------------------------------
 
@@ -97,3 +101,59 @@ instance
 instance
   (CategoricalFunctor p, Cod p ~ (cat2 ~> cat3 ~> (->)), cat1 ~ Dom p, forall x. MapArg2 cat2 cat3 (p x)) =>
   MapArg3 cat1 cat2 cat3 p
+
+--------------------------------------------------------------------------------
+
+-- | Lift a @('->')@ isomorphism into an arbitrary category @cat@. This is the
+-- identity-on-objects functor from the @('->')@ core groupoid (embodied by
+-- @'Iso' ('->')@) into @cat@. Objects stay put, and an isomorphism becomes a
+-- @cat@ morphism that keeps whichever leg @cat@ can use and discards the other.
+--
+-- Every category admits this functor, which is what lets a 'CategoricalFunctor'
+-- of /any/ variance map an isomorphism, whether its domain is @('->')@
+-- (covariant), 'Op' (contravariant), or @'Iso' ('->')@ (invariant). See
+-- 'Kindly.Functor.mapIso'.
+--
+-- 'liftIso' fixes its source to @'Iso' ('->')@, so @a@ and @b@ are 'Type' and
+-- the kind is @'Cat' 'Type'@. Supporting rank-2 functors (whose objects are type
+-- constructors) needs more than @PolyKinds@. There the universally available
+-- isos are natural isomorphisms, @'Iso' ((->) '~>' (->))@, not @'Iso' ('->')@,
+-- so the source groupoid has to be abstracted too, e.g. a second parameter
+-- @LiftIso src cat@ carrying the core groupoid at that kind.
+--
+-- === Laws
+--
+-- [Identity]    @'liftIso' 'id' == 'id'@
+-- [Composition] @'liftIso' (i '.' j) == 'liftIso' i '.' 'liftIso' j@
+type LiftIso :: Cat Type -> Constraint
+class (Category cat) => LiftIso cat where
+  liftIso :: Iso (->) a b -> cat a b
+
+-- | A covariant @('->')@ functor keeps the forward leg.
+instance LiftIso (->) where
+  liftIso :: Iso (->) a b -> a -> b
+  liftIso = embed
+
+-- | A contravariant 'Op' functor keeps the backward leg.
+instance LiftIso Op where
+  liftIso :: Iso (->) a b -> Op a b
+  liftIso i = Op (project i)
+
+-- | An invariant @'Iso' ('->')@ functor keeps both legs. The lift is the identity.
+instance LiftIso (Iso (->)) where
+  liftIso :: Iso (->) a b -> Iso (->) a b
+  liftIso = id
+
+-- | A @'Star' f@ Kleisli arrow keeps the forward leg, returning it in @f@ via
+-- 'pure'. Needs @'Monad' f@, matching its @'Category' ('Star' f)@ instance.
+-- @Star Maybe@ is the domain the library uses for filtering (@Filterable@)
+-- functors.
+instance (Monad f) => LiftIso (Star f) where
+  liftIso :: Iso (->) a b -> Star f a b
+  liftIso i = Star (pure . embed i)
+
+-- | A @'Kleisli' m@ arrow is @Star@ by another name (base's copy of the same
+-- @a -> m b@ type), so its lift is identical.
+instance (Monad m) => LiftIso (Kleisli m) where
+  liftIso :: Iso (->) a b -> Kleisli m a b
+  liftIso i = Kleisli (pure . embed i)

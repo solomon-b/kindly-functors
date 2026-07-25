@@ -1,3 +1,5 @@
+{-# LANGUAGE ImpredicativeTypes #-}
+
 -- | @hedgehog-classes@ 'Laws' for this library's category-polymorphic functor
 -- classes. A consumer can law-test their own 'CategoricalFunctor', 'MapArg1',
 -- and 'MapArg2' instances the way they test 'Functor' or 'Monoid'.
@@ -16,9 +18,12 @@
 -- @'Iso' ('->')@. 'bifunctorLaws' and 'profunctorLaws' also cover @'map2'@,
 -- at the @('->')@ and 'Op' domains respectively. 'mapIsoLaws' checks
 -- @'Kindly.Functor.mapIso'@, which maps an isomorphism through a functor of any
--- variance, so one bundle serves all three domains. 'liftIsoLaws' checks
--- 'liftIso' itself at any target category, covering the 'LiftIso' instances no
--- exported functor witnesses (e.g. @Star f@ and @Kleisli m@).
+-- variance, so one bundle serves all three domains. 'bimapIsoLaws' and
+-- 'trimapIsoLaws' do the same for @'Kindly.Bifunctor.bimapIso'@ and
+-- @'Kindly.Trifunctor.trimapIso'@, checking functoriality in every 'Iso'
+-- position. 'liftIsoLaws' checks 'liftIso' itself at any target category,
+-- covering the 'LiftIso' instances no exported functor witnesses (e.g.
+-- @Star f@ and @Kleisli m@).
 --
 -- The bundles are separate functions because the comparison differs. Covariant
 -- functors compare directly with 'Eq'. Contravariant and invariant functors
@@ -45,12 +50,14 @@ module Kindly.Functor.Laws
     -- * Covariant bifunctors
     bifunctorLaws,
     observedBifunctorLaws,
+    bimapIsoLaws,
 
     -- * Profunctors
     profunctorLaws,
 
     -- * Trifunctors
     observedTrifunctorLaws,
+    trimapIsoLaws,
   )
 where
 
@@ -63,8 +70,10 @@ import Hedgehog (Gen, Property, forAll, forAllWith, property, (===))
 import Hedgehog.Classes (Laws (..))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
+import Kindly.Bifunctor (Bifunctor, bimapIso)
 import Kindly.Class (LiftIso, MapArg1, MapArg2, MapArg3, liftIso, map1, map2, map3)
 import Kindly.Functor (mapIso)
+import Kindly.Trifunctor (Trifunctor, trimapIso)
 import Prelude hiding (id, (.))
 
 --------------------------------------------------------------------------------
@@ -377,6 +386,55 @@ observedBifunctorComposition genP obs = property $ do
   obs (map2 (g . h) p) a === obs (map2 g (map2 h p)) a
 
 --------------------------------------------------------------------------------
+-- Bifunctor isomorphism mapping (any variance)
+
+-- | The functor laws stated through @'Kindly.Bifunctor.bimapIso'@, which maps a
+-- @('->')@ isomorphism through each position of a bifunctor of /any/ variance.
+-- Identity (@'bimapIso' 'id' 'id' = 'id'@) and composition
+-- (@'bimapIso' (i '.' i') (j '.' j') = 'bimapIso' i j '.' 'bimapIso' i' j'@),
+-- with @'id'@ and @('.')@ in the @'Iso' ('->')@ groupoid, observed through
+-- @obs@. Each position's category is recovered from @p@, so one bundle covers
+-- every combination of variances.
+bimapIsoLaws ::
+  forall cat1 cat2 p r.
+  (Bifunctor cat1 cat2 p, LiftIso cat1, LiftIso cat2, Eq r, Show r) =>
+  Gen (p Int Int) ->
+  (p Int Int -> Int -> r) ->
+  Laws
+bimapIsoLaws genP obs =
+  Laws
+    "bimapIso"
+    [ ("Identity", bimapIsoIdentity genP obs),
+      ("Composition", bimapIsoComposition genP obs)
+    ]
+
+bimapIsoIdentity ::
+  forall cat1 cat2 p r.
+  (Bifunctor cat1 cat2 p, LiftIso cat1, LiftIso cat2, Eq r, Show r) =>
+  Gen (p Int Int) ->
+  (p Int Int -> Int -> r) ->
+  Property
+bimapIsoIdentity genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  obs (bimapIso (id :: Iso (->) Int Int) (id :: Iso (->) Int Int) p) a === obs p a
+
+bimapIsoComposition ::
+  forall cat1 cat2 p r.
+  (Bifunctor cat1 cat2 p, LiftIso cat1, LiftIso cat2, Eq r, Show r) =>
+  Gen (p Int Int) ->
+  (p Int Int -> Int -> r) ->
+  Property
+bimapIsoComposition genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  let i1 = Iso (+ 1) (subtract 1) :: Iso (->) Int Int
+      i2 = Iso (* 2) (`div` 2) :: Iso (->) Int Int
+      j1 = Iso (+ 3) (subtract 3) :: Iso (->) Int Int
+      j2 = Iso (* 5) (`div` 5) :: Iso (->) Int Int
+  obs (bimapIso (i1 . i2) (j1 . j2) p) a === obs (bimapIso i1 j1 (bimapIso i2 j2 p)) a
+
+--------------------------------------------------------------------------------
 -- Trifunctor
 
 -- | The functor laws for a covariant @'map3'@, observed through @obs@ so the
@@ -418,6 +476,58 @@ observedTrifunctorComposition genP obs = property $ do
   let g = (+ 1) :: Int -> Int
       h = (* 2) :: Int -> Int
   obs (map3 (g . h) p) a === obs (map3 g (map3 h p)) a
+
+--------------------------------------------------------------------------------
+-- Trifunctor isomorphism mapping (any variance)
+
+-- | The functor laws stated through @'Kindly.Trifunctor.trimapIso'@, which maps
+-- a @('->')@ isomorphism through each position of a trifunctor of /any/
+-- variance. Identity (@'trimapIso' 'id' 'id' 'id' = 'id'@) and composition
+-- (@'trimapIso' (i '.' i') (j '.' j') (k '.' k') =
+-- 'trimapIso' i j k '.' 'trimapIso' i' j' k'@), with @'id'@ and @('.')@ in the
+-- @'Iso' ('->')@ groupoid, observed through @obs@. Each position's category is
+-- recovered from @p@, so one bundle covers every combination of variances.
+trimapIsoLaws ::
+  forall cat1 cat2 cat3 p r.
+  (Trifunctor cat1 cat2 cat3 p, LiftIso cat1, LiftIso cat2, LiftIso cat3, Eq r, Show r) =>
+  Gen (p Int Int Int) ->
+  (p Int Int Int -> Int -> r) ->
+  Laws
+trimapIsoLaws genP obs =
+  Laws
+    "trimapIso"
+    [ ("Identity", trimapIsoIdentity genP obs),
+      ("Composition", trimapIsoComposition genP obs)
+    ]
+
+trimapIsoIdentity ::
+  forall cat1 cat2 cat3 p r.
+  (Trifunctor cat1 cat2 cat3 p, LiftIso cat1, LiftIso cat2, LiftIso cat3, Eq r, Show r) =>
+  Gen (p Int Int Int) ->
+  (p Int Int Int -> Int -> r) ->
+  Property
+trimapIsoIdentity genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  obs (trimapIso (id :: Iso (->) Int Int) (id :: Iso (->) Int Int) (id :: Iso (->) Int Int) p) a === obs p a
+
+trimapIsoComposition ::
+  forall cat1 cat2 cat3 p r.
+  (Trifunctor cat1 cat2 cat3 p, LiftIso cat1, LiftIso cat2, LiftIso cat3, Eq r, Show r) =>
+  Gen (p Int Int Int) ->
+  (p Int Int Int -> Int -> r) ->
+  Property
+trimapIsoComposition genP obs = property $ do
+  p <- forAllWith (const "<opaque>") genP
+  a <- forAll genInt
+  let i1 = Iso (+ 1) (subtract 1) :: Iso (->) Int Int
+      i2 = Iso (* 2) (`div` 2) :: Iso (->) Int Int
+      j1 = Iso (+ 3) (subtract 3) :: Iso (->) Int Int
+      j2 = Iso (* 5) (`div` 5) :: Iso (->) Int Int
+      k1 = Iso (+ 7) (subtract 7) :: Iso (->) Int Int
+      k2 = Iso (* 11) (`div` 11) :: Iso (->) Int Int
+  obs (trimapIso (i1 . i2) (j1 . j2) (k1 . k2) p) a
+    === obs (trimapIso i1 j1 k1 (trimapIso i2 j2 k2 p)) a
 
 --------------------------------------------------------------------------------
 -- Profunctor

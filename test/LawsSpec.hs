@@ -67,6 +67,7 @@ import Hedgehog.Range qualified as Range
 import Kindly ()
 import Kindly.Functor.Laws
   ( bifunctorLaws,
+    bimapIsoLaws,
     contravariantFunctorLaws,
     functorLaws,
     invariantFunctorLaws,
@@ -75,6 +76,7 @@ import Kindly.Functor.Laws
     observedBifunctorLaws,
     observedTrifunctorLaws,
     profunctorLaws,
+    trimapIsoLaws,
   )
 import Prelude
 
@@ -475,6 +477,14 @@ tests =
           labeled "mapIso Identity" (mapIsoLaws (genIdentity genInt) obsIdentity),
           labeled "mapIso Predicate" (mapIsoLaws genPredicate obsPredicate),
           labeled "mapIso Endo" (mapIsoLaws genEndo obsEndo),
+          -- bimapIso: isomorphism mapping through a bifunctor's positions.
+          labeled "bimapIso (,)" (bimapIsoLaws (genPairT genInt genInt) (\p _ -> p)),
+          labeled "bimapIso Op" (bimapIsoLaws genOp obsOp),
+          labeled "bimapIso Dual (->)" (bimapIsoLaws genDual obsDual),
+          -- trimapIso: isomorphism mapping through a trifunctor's positions.
+          labeled "trimapIso (,,)" (trimapIsoLaws genTriple obsTriple),
+          labeled "trimapIso Forget" (trimapIsoLaws genForgetT obsForgetT),
+          labeled "trimapIso K1" (trimapIsoLaws genK1 obsK1),
           -- liftIso: the core-groupoid inclusion at each target category.
           labeled "liftIso (->)" (liftIsoLaws obsFn),
           labeled "liftIso Op" (liftIsoLaws obsOp),

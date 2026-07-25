@@ -1,3 +1,5 @@
+{-# LANGUAGE ImpredicativeTypes #-}
+
 -- | @hedgehog-classes@ 'Laws' for this library's category-polymorphic functor
 -- classes. A consumer can law-test their own 'CategoricalFunctor', 'MapArg1',
 -- and 'MapArg2' instances the way they test 'Functor' or 'Monoid'.
@@ -68,10 +70,10 @@ import Hedgehog (Gen, Property, forAll, forAllWith, property, (===))
 import Hedgehog.Classes (Laws (..))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import Kindly.Bifunctor (bimapIso)
+import Kindly.Bifunctor (Bifunctor, bimapIso)
 import Kindly.Class (LiftIso, MapArg1, MapArg2, MapArg3, liftIso, map1, map2, map3)
 import Kindly.Functor (mapIso)
-import Kindly.Trifunctor (trimapIso)
+import Kindly.Trifunctor (Trifunctor, trimapIso)
 import Prelude hiding (id, (.))
 
 --------------------------------------------------------------------------------
@@ -395,13 +397,7 @@ observedBifunctorComposition genP obs = property $ do
 -- every combination of variances.
 bimapIsoLaws ::
   forall cat1 cat2 p r.
-  ( MapArg2 cat1 cat2 p,
-    forall x. MapArg1 cat2 (p x),
-    LiftIso cat1,
-    LiftIso cat2,
-    Eq r,
-    Show r
-  ) =>
+  (Bifunctor cat1 cat2 p, LiftIso cat1, LiftIso cat2, Eq r, Show r) =>
   Gen (p Int Int) ->
   (p Int Int -> Int -> r) ->
   Laws
@@ -414,13 +410,7 @@ bimapIsoLaws genP obs =
 
 bimapIsoIdentity ::
   forall cat1 cat2 p r.
-  ( MapArg2 cat1 cat2 p,
-    forall x. MapArg1 cat2 (p x),
-    LiftIso cat1,
-    LiftIso cat2,
-    Eq r,
-    Show r
-  ) =>
+  (Bifunctor cat1 cat2 p, LiftIso cat1, LiftIso cat2, Eq r, Show r) =>
   Gen (p Int Int) ->
   (p Int Int -> Int -> r) ->
   Property
@@ -431,13 +421,7 @@ bimapIsoIdentity genP obs = property $ do
 
 bimapIsoComposition ::
   forall cat1 cat2 p r.
-  ( MapArg2 cat1 cat2 p,
-    forall x. MapArg1 cat2 (p x),
-    LiftIso cat1,
-    LiftIso cat2,
-    Eq r,
-    Show r
-  ) =>
+  (Bifunctor cat1 cat2 p, LiftIso cat1, LiftIso cat2, Eq r, Show r) =>
   Gen (p Int Int) ->
   (p Int Int -> Int -> r) ->
   Property
@@ -505,15 +489,7 @@ observedTrifunctorComposition genP obs = property $ do
 -- recovered from @p@, so one bundle covers every combination of variances.
 trimapIsoLaws ::
   forall cat1 cat2 cat3 p r.
-  ( MapArg3 cat3 cat2 cat1 p,
-    forall x. MapArg2 cat2 cat1 (p x),
-    forall x y. MapArg1 cat1 (p x y),
-    LiftIso cat1,
-    LiftIso cat2,
-    LiftIso cat3,
-    Eq r,
-    Show r
-  ) =>
+  (Trifunctor cat1 cat2 cat3 p, LiftIso cat1, LiftIso cat2, LiftIso cat3, Eq r, Show r) =>
   Gen (p Int Int Int) ->
   (p Int Int Int -> Int -> r) ->
   Laws
@@ -526,15 +502,7 @@ trimapIsoLaws genP obs =
 
 trimapIsoIdentity ::
   forall cat1 cat2 cat3 p r.
-  ( MapArg3 cat3 cat2 cat1 p,
-    forall x. MapArg2 cat2 cat1 (p x),
-    forall x y. MapArg1 cat1 (p x y),
-    LiftIso cat1,
-    LiftIso cat2,
-    LiftIso cat3,
-    Eq r,
-    Show r
-  ) =>
+  (Trifunctor cat1 cat2 cat3 p, LiftIso cat1, LiftIso cat2, LiftIso cat3, Eq r, Show r) =>
   Gen (p Int Int Int) ->
   (p Int Int Int -> Int -> r) ->
   Property
@@ -545,15 +513,7 @@ trimapIsoIdentity genP obs = property $ do
 
 trimapIsoComposition ::
   forall cat1 cat2 cat3 p r.
-  ( MapArg3 cat3 cat2 cat1 p,
-    forall x. MapArg2 cat2 cat1 (p x),
-    forall x y. MapArg1 cat1 (p x y),
-    LiftIso cat1,
-    LiftIso cat2,
-    LiftIso cat3,
-    Eq r,
-    Show r
-  ) =>
+  (Trifunctor cat1 cat2 cat3 p, LiftIso cat1, LiftIso cat2, LiftIso cat3, Eq r, Show r) =>
   Gen (p Int Int Int) ->
   (p Int Int Int -> Int -> r) ->
   Property

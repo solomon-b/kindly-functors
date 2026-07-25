@@ -1,9 +1,21 @@
--- | Work in Progress.
+-- | Rank-2 functors: 'CategoricalFunctor's whose parameters are themselves
+-- functors. A type with @N@ functor parameters is an @N@-ary functor between
+-- functor categories, and 'bmap1' \/ 'bmap2' \/ 'bmap3' select which parameter
+-- to map.
+--
+-- The selectors count parameters __from the right__, matching the core
+-- 'Kindly.Class.map1' \/ 'Kindly.Class.map2' \/ 'Kindly.Class.map3'. On
+-- @b f g h@, 'bmap1' maps @h@, 'bmap2' maps @g@, and 'bmap3' maps @f@.
 module Kindly.Rank2
-  ( BFunctor,
-    bmap,
-    BFunctor2,
+  ( -- * Covariant aliases
+    FunctorB,
+    BifunctorB,
+    TrifunctorB,
+
+    -- * Selectors
+    bmap1,
     bmap2,
+    bmap3,
   )
 where
 
@@ -12,14 +24,25 @@ where
 import Kindly.Class
 
 --------------------------------------------------------------------------------
+-- Covariant aliases
 
-type BFunctor b = FunctorOf ((->) ~> (->)) (->) b
+type FunctorB b = MapArg1 ((->) ~> (->)) b
 
-bmap :: BFunctor b => forall f g. (forall x. f x -> g x) -> b f -> b g 
-bmap nat = map (Nat nat)
+type BifunctorB b = MapArg2 ((->) ~> (->)) ((->) ~> (->)) b
 
-type BFunctor2 b = FunctorOf ((->) ~> (->) ~> (->)) (->) b
+type TrifunctorB b = MapArg3 ((->) ~> (->)) ((->) ~> (->)) ((->) ~> (->)) b
 
-bmap2 :: BFunctor2 b => forall f g. (forall x x'. f x x' -> g x x') -> b f -> b g 
-bmap2 nat = map (Nat (Nat nat))
+--------------------------------------------------------------------------------
+-- Selectors
 
+-- | Map the rightmost functor parameter of a rank-2 type.
+bmap1 :: (MapArg1 (c ~> d) b) => (forall x. d (f x) (g x)) -> b f -> b g
+bmap1 n = map1 (Nat n)
+
+-- | Map the second-from-right functor parameter of a rank-2 type.
+bmap2 :: (MapArg2 (c ~> d) e b) => (forall x. d (f x) (g x)) -> b f h -> b g h
+bmap2 n = map2 (Nat n)
+
+-- | Map the third-from-right functor parameter of a rank-2 type.
+bmap3 :: (MapArg3 (c ~> d) e e' b) => (forall x. d (f x) (g x)) -> b f h i -> b g h i
+bmap3 n = map3 (Nat n)

@@ -17,6 +17,7 @@ import Data.Isomorphism (Iso (Iso))
 import Data.Maybe (maybeToList)
 import Data.Monoid (Endo (..))
 import Data.Profunctor (Star (..))
+import GenericSpec qualified
 import Kindly qualified as UUT
 import LawsSpec qualified
 import Rank2LawsSpec qualified
@@ -31,7 +32,8 @@ main = do
   summary <- hspecWithResult defaultConfig exampleSpec
   lawsOk <- LawsSpec.tests
   rank2Ok <- Rank2LawsSpec.tests
-  when (summaryFailures summary > 0 || not lawsOk || not rank2Ok) exitFailure
+  genOk <- GenericSpec.tests
+  when (summaryFailures summary > 0 || not lawsOk || not rank2Ok || not genOk) exitFailure
 
 --------------------------------------------------------------------------------
 -- Example-based (characterization) tests

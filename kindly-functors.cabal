@@ -70,6 +70,8 @@ library
       base > 4 && < 5,
       bifunctors                    >= 5.6 && < 5.7,
       containers                    >= 0.6 && < 0.9,
+      kind-generics                 >= 0.5 && < 0.6,
+      kind-generics-th              >= 0.2.3 && < 0.3,
       mtl                           >= 2.2.2 && < 2.4,
       profunctors                   >= 5.6.2 && < 5.7,
       semigroupoids                 >= 6.0.0 && < 6.1,
@@ -102,7 +104,8 @@ library laws
 test-suite kindly-functors-test
     import:           warnings
     default-language: Haskell2010
-    other-modules:    LawsSpec
+    other-modules:    GenericSpec
+                      LawsSpec
                       Rank2LawsSpec
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
@@ -114,6 +117,8 @@ test-suite kindly-functors-test
         hspec,
         hedgehog                      >= 1.4 && < 1.6,
         hedgehog-classes              >= 0.2 && < 0.3,
+        kind-generics                 >= 0.5 && < 0.6,
+        kind-generics-th              >= 0.2.3 && < 0.3,
         kindly-functors,
         kindly-functors:laws,
         profunctors                   >= 5.6.2 && < 5.7,

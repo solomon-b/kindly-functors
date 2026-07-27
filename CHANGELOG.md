@@ -1,6 +1,8 @@
 # Revision history for kindly-functors
 
 ## Upcoming
+
+## 0.2.0.0 -- 2026-07-26
 * Expand GHC support through 9.12. Bump nixpkgs, Cabal, and CI tooling.
 * Replace the `Makefile` with a `justfile`, including release commands.
 * Add a public `kindly-functors:laws` sublibrary of `hedgehog-classes` `Laws`

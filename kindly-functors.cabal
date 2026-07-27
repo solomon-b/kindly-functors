@@ -22,6 +22,10 @@ tested-with:     GHC == 9.0.2,
                  GHC == 9.10.3,
                  GHC == 9.12.4,
 
+source-repository head
+    type:     git
+    location: https://github.com/solomon-b/kindly-functors.git
+
 --------------------------------------------------------------------------------
 
 common warnings
@@ -68,7 +72,7 @@ library
       Kindly.Rank2
       Kindly.Trifunctor
     build-depends:
-      base > 4 && < 5,
+      base >= 4 && < 5,
       bifunctors                    >= 5.6 && < 5.7,
       containers                    >= 0.6 && < 0.9,
       kind-generics                 >= 0.5 && < 0.6,
@@ -93,7 +97,7 @@ library laws
       Kindly.Functor.Laws
       Kindly.Rank2.Laws
     build-depends:
-      base > 4 && < 5,
+      base >= 4 && < 5,
       kindly-functors,
       semigroupoids                 >= 6.0.0 && < 6.1,
       hedgehog                      >= 1.4 && < 1.6,
@@ -112,7 +116,7 @@ test-suite kindly-functors-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        base > 4 && < 5,
+        base >= 4 && < 5,
         bifunctors                    >= 5.6 && < 5.7,
         containers                    >= 0.6 && < 0.9,
         hspec,

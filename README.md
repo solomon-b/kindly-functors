@@ -78,6 +78,28 @@ False
 
 The declared variance is checked against the fields. Writing `Dom Pred = (->)` here is a compile error rather than a wrong answer, because `a` occurs in a negative position. This covers covariant (`(->)`), contravariant (`Op`), and invariant (`Iso (->)`) single-parameter functors, and two- and three-parameter functors in any per-argument mix of those variances. It does not cover non-`(->)` domains (e.g. `Star Maybe`), rank-2 functors, constructors carrying constraints or existentials, or a recursive field whose head has no base `Functor`.
 
+If your type already has a `base` `Functor`, `Contravariant`, `Bifunctor`, or `Profunctor` instance, skip the generics and derive the matching `CategoricalFunctor` through one of the `From*` adapters with `DerivingVia`. Import `Kindly` qualified here so its own `Functor` does not clash with the one you are deriving:
+
+```haskell
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+import Kindly qualified as K
+
+data Tree a = Leaf a | Node (Tree a) (Tree a)
+  deriving (Show, Functor)
+
+deriving via (K.FromFunctor Tree) instance K.CategoricalFunctor Tree
+```
+```
+> K.fmap (+1) (Node (Leaf 1) (Leaf 2))
+Node (Leaf 2) (Leaf 3)
+```
+
+`FromContra`, `FromBifunctor`, and `FromProfunctor` (the last two in `Kindly.Bifunctor`) do the same for `Contravariant`, `Bifunctor`, and `Profunctor` instances.
+
 # Isomorphism mapping
 
 `invmap` threads a type isomorphism through a functor of any variance, keeping whichever leg that variance can use:

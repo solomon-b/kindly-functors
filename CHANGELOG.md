@@ -73,6 +73,11 @@
   functors (bifunctors, profunctors, trifunctors) in any per-argument combination
   of those variances. A covariant or contravariant instance of the wrong sign is
   a compile error rather than a wrong answer. Adds a `kind-generics` dependency.
+* Export the `deriving via` adapters `FromFunctor` and `FromContra` from
+  `Kindly.Functor`, and `FromBifunctor` and `FromProfunctor` from
+  `Kindly.Bifunctor`. A type with an existing base
+  `Functor`/`Contravariant`/`Bifunctor`/`Profunctor` instance can derive its
+  `CategoricalFunctor` instance through the matching adapter.
 
 ## 0.1.0.1 -- 2024-02-04
 

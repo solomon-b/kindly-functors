@@ -1,8 +1,6 @@
 Kindly Functors
 ===============
 
-🚨 **WORK IN PROGRESS** 🚨
-
 [![nix:build](https://github.com/solomon-b/kindly-functors/actions/workflows/nix.yml/badge.svg?branch=main)](https://github.com/solomon-b/kindly-functors/actions/workflows/nix.yml)
 [![cabal:build](https://github.com/solomon-b/kindly-functors/actions/workflows/cabal.yml/badge.svg?branch=main)](https://github.com/solomon-b/kindly-functors/actions/workflows/cabal.yml)
 
@@ -41,6 +39,82 @@ Left "True"
 > trimap show show show (True, False, ())
 ("True","False","()")
 ```
+
+# Deriving your own instances
+
+`map` has a generic default backed by [`kind-generics`](https://hackage.haskell.org/package/kind-generics). Give your type a `GenericK` instance with `deriveGenericK`, then write a `CategoricalFunctor` instance with an empty body that supplies only `Dom` and `Cod`:
+
+```haskell
+{-# LANGUAGE TemplateHaskell #-}
+
+import Kindly
+
+data Pair a = Pair a a deriving Show
+$(deriveGenericK ''Pair)
+
+instance CategoricalFunctor Pair where
+  type Dom Pair = (->)
+  type Cod Pair = (->)
+```
+```
+> fmap (+1) (Pair 1 2)
+Pair 2 3
+```
+
+The default reads each argument's variance off the field structure, so a contravariant type only differs in its `Dom`:
+
+```haskell
+newtype Pred a = Pred { runPred :: a -> Bool }
+$(deriveGenericK ''Pred)
+
+instance CategoricalFunctor Pred where
+  type Dom Pred = Op
+  type Cod Pred = (->)
+```
+```
+> runPred (contramap length (Pred even)) [1,2,3]
+False
+```
+
+The declared variance is checked against the fields. Writing `Dom Pred = (->)` here is a compile error rather than a wrong answer, because `a` occurs in a negative position. This covers covariant (`(->)`), contravariant (`Op`), and invariant (`Iso (->)`) single-parameter functors, and two- and three-parameter functors in any per-argument mix of those variances. It does not cover non-`(->)` domains (e.g. `Star Maybe`), rank-2 functors, constructors carrying constraints or existentials, or a recursive field whose head has no base `Functor`.
+
+# Isomorphism mapping
+
+`invmap` threads a type isomorphism through a functor of any variance, keeping whichever leg that variance can use:
+
+```haskell
+invmap :: (Functor cat f, LiftIso cat) => (a -> b) -> (b -> a) -> f a -> f b
+```
+```
+> runIdentity (invmap show (read @Int) (Identity 5))
+"5"
+
+> getPredicate (invmap show (read @Int) (Predicate even)) "4"
+True
+```
+
+The covariant call keeps the forward function. The contravariant call keeps the backward one. So `invmap` resolves for covariant and contravariant functors, not only invariant ones. `mapIso` is the same operation taking a packaged `Iso (->)`, and `bimapIso` / `trimapIso` map one `Iso` through each position of a bifunctor / trifunctor regardless of that position's variance.
+
+# Rank-2 functors
+
+`Kindly.Rank2` covers types whose parameters are themselves functors (higher-kinded data). `bmap1`, `bmap2`, and `bmap3` pick which functor parameter to map, counting from the right to match `map1` / `map2` / `map3`:
+
+```haskell
+import Kindly
+
+data Schema f = Schema (f Int) (f Bool)
+
+instance CategoricalFunctor Schema where
+  type Dom Schema = (->) ~> (->)
+  type Cod Schema = (->)
+  map (Nat nat) (Schema a b) = Schema (nat a) (nat b)
+```
+```
+> bmap1 maybeToList (Schema (Just 1) Nothing)
+Schema [1] []
+```
+
+`bcontramap1` / `binvmap1` (and their `2` / `3` variants) do the same for a parameter the type is contravariant or invariant in.
 
 # Lower Level Interface
 
@@ -148,3 +222,25 @@ single parameter and sets its variance.
 
 The `MapArg*` classes and higher level interface was built to smooth
 over this issue at the cost of less granular control.
+
+# Included instances
+
+The library comes with instances for a lot of standard types: the `transformers` monad-transformer stack, the `profunctors` hierarchy (`Star`, `Costar`, `Forget`, the `Tambara` / `Pastro` families, and more), the `bifunctors` wrappers (`Flip`, `Clown`, `Joker`, `Product`, `Sum`, `Tannen`, `Biff`), several `containers` types (`Map`, `IntMap`, `Seq`, `Tree`, `SCC`), and the contravariant types from `base`. See `CHANGELOG.md` for the full list.
+
+# Testing with the laws sublibrary
+
+`kindly-functors:laws` is a public sublibrary of [`hedgehog-classes`](https://hackage.haskell.org/package/hedgehog-classes) `Laws`, so you can law-test your own instances the way you would test `Functor` or `Monoid`. Depend on it:
+
+```
+build-depends: kindly-functors:laws
+```
+
+```haskell
+import Kindly.Functor.Laws (functorLaws)
+import Hedgehog.Classes (lawsCheck)
+
+main :: IO Bool
+main = lawsCheck (functorLaws genMyFunctor)
+```
+
+Each bundle states identity and composition for one variance: `functorLaws` at `(->)`, `contravariantFunctorLaws` at `Op`, `invariantFunctorLaws` at `Iso (->)`, with `bifunctorLaws` and `profunctorLaws` also covering `map2`. `mapIsoLaws`, `bimapIsoLaws`, and `trimapIsoLaws` check the isomorphism-mapping functions, and `Kindly.Rank2.Laws` supplies the rank-2 bundles. Covariant functors are compared with `Eq`. Contravariant and invariant functors are observed through a caller-supplied function, since they usually have no `Eq` or `Show`.

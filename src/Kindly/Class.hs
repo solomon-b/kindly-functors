@@ -43,9 +43,9 @@ import Data.Semigroupoid (Semigroupoid (..))
 -- Earlier GHCs still treat @~@ as built-in syntax and do not export it.
 import Data.Type.Equality (type (~))
 #endif
+import GHC.Base (Functor (fmap), Monad, Type, pure)
 import Generics.Kind
 import Generics.Kind.TH (deriveGenericK)
-import GHC.Base (Functor (fmap), Monad, Type, pure)
 import Prelude (Bool (..))
 
 --------------------------------------------------------------------------------
@@ -76,6 +76,7 @@ class (Category (Dom f), Category (Cod f)) => CategoricalFunctor (f :: from -> t
   --
   -- @
   -- data Pred a = Pred (a -> Bool)
+
   -- $(deriveGenericK ''Pred)
   --
   -- instance CategoricalFunctor Pred where
@@ -89,6 +90,7 @@ class (Category (Dom f), Category (Cod f)) => CategoricalFunctor (f :: from -> t
   -- cover non-@(->)@ domains such as @Star Maybe@ (filtering), rank-2 functors,
   -- constructors carrying constraints or existentials, or a recursive field whose
   -- head has no base @Functor@.
+
   map :: Dom f a b -> Cod f (f a) (f b)
   default map :: (GMapFull (Dom f) (Cod f) f) => Dom f a b -> Cod f (f a) (f b)
   map = gmapFull
@@ -252,10 +254,10 @@ instance
   ) =>
   GFunctorArgPos (f ':@: x) v as bs 'True
   where
-  gfmappf f x = fmap (gfmappf @_ @x @v @as @bs @(ContainsTyVar v x) f) x
+  gfmappf f = fmap (gfmappf @_ @x @v @as @bs @(ContainsTyVar v x) f)
 
 instance (w ~ v) => GFunctorArgPos ('Var w) v as bs 'True where
-  gfmappf f x = f x
+  gfmappf f = f
 
 -- Contravariant interpreter. At a function field the domain is mapped by the
 -- covariant interpreter and the codomain recurses contravariantly.
@@ -331,7 +333,7 @@ instance (Interpret t as ~ Interpret t bs) => GInvArgPos t v as bs 'False where
   ginvpf _ _ = id
 
 instance (w ~ v) => GInvArgPos ('Var w) v as bs 'True where
-  ginvpf fwd _ x = fwd x
+  ginvpf fwd _ = fwd
 
 instance
   ( GInvArgPos dom v bs as (ContainsTyVar v dom),
@@ -352,7 +354,7 @@ instance
   ) =>
   GInvArgPos (f ':@: x) v as bs 'True
   where
-  ginvpf fwd bwd x = fmap (ginvpf @_ @x @v @as @bs @(ContainsTyVar v x) fwd bwd) x
+  ginvpf fwd bwd = fmap (ginvpf @_ @x @v @as @bs @(ContainsTyVar v x) fwd bwd)
 
 --------------------------------------------------------------------------------
 -- The wrappers quantify the assignment internally so a plain

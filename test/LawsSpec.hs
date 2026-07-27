@@ -1,6 +1,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
 -- | Self-test for the @kindly-functors:laws@ sublibrary. Runs the exported
@@ -296,7 +297,7 @@ obsTambara :: Tambara (->) Int Int -> Int -> Int
 obsTambara (Tambara t) a = fst (t (a, ()))
 
 genPastro :: Gen (Pastro (->) Int Int)
-genPastro = (\n k -> Pastro (\(y, z) -> y + z) (* n) (\a -> (a, k))) <$> genInt <*> genInt
+genPastro = (\n k -> Pastro (uncurry (+)) (* n) (,k)) <$> genInt <*> genInt
 
 obsPastro :: Pastro (->) Int Int -> Int -> Int
 obsPastro (Pastro l m r) a = case r a of (x, z) -> l (m x, z)
@@ -478,7 +479,7 @@ tests =
           labeled "mapIso Predicate" (mapIsoLaws genPredicate obsPredicate),
           labeled "mapIso Endo" (mapIsoLaws genEndo obsEndo),
           -- bimapIso: isomorphism mapping through a bifunctor's positions.
-          labeled "bimapIso (,)" (bimapIsoLaws (genPairT genInt genInt) (\p _ -> p)),
+          labeled "bimapIso (,)" (bimapIsoLaws (genPairT genInt genInt) const),
           labeled "bimapIso Op" (bimapIsoLaws genOp obsOp),
           labeled "bimapIso Dual (->)" (bimapIsoLaws genDual obsDual),
           -- trimapIso: isomorphism mapping through a trifunctor's positions.

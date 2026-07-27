@@ -62,6 +62,15 @@
   Re-export `Iso` from `Kindly.Functor`, `Kindly.Bifunctor`, `Kindly.Trifunctor`,
   and `Kindly` so callers of `mapIso`/`bimapIso`/`trimapIso` can build
   isomorphisms without importing `Data.Isomorphism` directly.
+* Give `CategoricalFunctor`'s `map` a generic default backed by `kind-generics`,
+  so a datatype with a `GenericK` instance (from `deriveGenericK`) gets a
+  `CategoricalFunctor` instance from an empty body carrying only its `Dom` and
+  `Cod`. The default reads variance off the field structure and dispatches on the
+  instance's categories: covariant (`Dom = (->)`), contravariant (`Op`), and
+  invariant (`Iso (->)`) single-parameter functors, and two- and three-parameter
+  functors (bifunctors, profunctors, trifunctors) in any per-argument combination
+  of those variances. A covariant or contravariant instance of the wrong sign is
+  a compile error rather than a wrong answer. Adds a `kind-generics` dependency.
 
 ## 0.1.0.1 -- 2024-02-04
 

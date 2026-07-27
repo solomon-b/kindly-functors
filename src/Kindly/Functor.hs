@@ -617,7 +617,7 @@ instance (forall x. MapArg1 (->) (p x)) => CategoricalFunctor (Hask.Profunctor.T
   type Cod (Hask.Profunctor.TambaraSum p a) = (->)
 
   map f (Hask.Profunctor.TambaraSum t) =
-    Hask.Profunctor.TambaraSum $ map1 (\e -> case e of Left b -> Left (f b); Right c -> Right c) t
+    Hask.Profunctor.TambaraSum $ map1 (\case Left b -> Left (f b); Right c -> Right c) t
 
 instance CategoricalFunctor (Hask.Profunctor.PastroSum p a) where
   type Dom (Hask.Profunctor.PastroSum p a) = (->)

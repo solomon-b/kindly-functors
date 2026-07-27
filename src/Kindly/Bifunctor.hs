@@ -167,7 +167,7 @@ instance (MapArg2 (->) (->) p, MapArg2 (->) (->) q) => CategoricalFunctor (Sum p
 
   map f =
     Nat
-      ( \s -> case s of
+      ( \case
           L2 pab -> L2 (map2 f pab)
           R2 qab -> R2 (map2 f qab)
       )
@@ -254,7 +254,7 @@ instance (MapArg2 Op (->) q) => CategoricalFunctor (Hask.Rift p q :: Type -> Typ
   type Dom (Hask.Rift p q) = Op
   type Cod (Hask.Rift p q) = (->) ~> (->)
 
-  map (Op f) = Nat (\(Hask.Rift g) -> Hask.Rift (\p -> map2 (Op f) (g p)))
+  map (Op f) = Nat (\(Hask.Rift g) -> Hask.Rift (map2 (Op f) . g))
 
 instance CategoricalFunctor (Hask.Yoneda p) where
   type Dom (Hask.Yoneda p) = Op
@@ -296,7 +296,7 @@ instance CategoricalFunctor (Hask.Copastro p) where
   type Dom (Hask.Copastro p) = Op
   type Cod (Hask.Copastro p) = (->) ~> (->)
 
-  map (Op f) = Nat (\(Hask.Copastro g) -> Hask.Copastro (\n -> Hask.lmap f (g n)))
+  map (Op f) = Nat (\(Hask.Copastro g) -> Hask.Copastro (Hask.lmap f . g))
 
 instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.TambaraSum p) where
   type Dom (Hask.TambaraSum p) = Op
@@ -320,7 +320,7 @@ instance CategoricalFunctor (Hask.CopastroSum p) where
   type Dom (Hask.CopastroSum p) = Op
   type Cod (Hask.CopastroSum p) = (->) ~> (->)
 
-  map (Op f) = Nat (\(Hask.CopastroSum g) -> Hask.CopastroSum (\n -> Hask.lmap f (g n)))
+  map (Op f) = Nat (\(Hask.CopastroSum g) -> Hask.CopastroSum (Hask.lmap f . g))
 
 instance (MapArg2 Op (->) p) => CategoricalFunctor (Hask.Closure p) where
   type Dom (Hask.Closure p) = Op

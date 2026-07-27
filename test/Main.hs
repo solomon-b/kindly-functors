@@ -49,7 +49,7 @@ exampleSpec = do
       (UUT.fmap . UUT.fmap) show (Just (Just True)) `shouldBe` Just (Just "True")
       UUT.fmap ((\f -> f "True") . getPredicate) ((UUT.fmap . UUT.fmap) (Op read) (Just (Predicate not))) `shouldBe` Just False
     it "works over a constrained instance (Kleisli)" $ do
-      runKleisli (UUT.fmap show (Kleisli (\x -> Identity x))) (5 :: Int) `shouldBe` Identity "5"
+      runKleisli (UUT.fmap show (Kleisli Identity)) (5 :: Int) `shouldBe` Identity "5"
 
   describe "invmap" $ do
     it "works invariantly (Endo)" $ do

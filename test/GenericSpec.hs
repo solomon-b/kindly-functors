@@ -89,7 +89,7 @@ instance CategoricalFunctor Box where
 boxArrowCodomain :: Property
 boxArrowCodomain = property $ do
   n <- forAll genInt
-  let Box v f = K.fmap (show :: Int -> String) (Box n (\i -> i + n))
+  let Box v f = K.fmap (show :: Int -> String) (Box n (+ n))
   v === show n
   f 3 === show (3 + n)
 
@@ -119,7 +119,7 @@ instance CategoricalFunctor Mix where
   type Cod Mix = (->)
 
 genMix :: Gen (Mix Int)
-genMix = Mix <$> ((\n -> (> n)) <$> genInt) <*> Gen.list (Range.linear 0 4) genInt
+genMix = Mix . (\n -> (> n)) <$> genInt <*> Gen.list (Range.linear 0 4) genInt
 
 obsMix :: Mix Int -> Int -> (Bool, [Int])
 obsMix (Mix p xs) a = (p a, xs)
@@ -142,7 +142,7 @@ genBiT :: Gen a -> Gen b -> Gen (BiT a b)
 genBiT ga gb = BiT <$> ga <*> gb
 
 -- Profunctor: contravariant in the first argument, covariant in the second.
-data ProT a b = ProT (a -> b)
+newtype ProT a b = ProT (a -> b)
 
 $(deriveGenericK ''ProT)
 

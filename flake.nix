@@ -24,6 +24,7 @@
               cabal-install
               haskell.compiler.${compiler}
               haskell.packages.${compiler}.haskell-language-server
+              hlint
               just
               nixpkgs-fmt
               ormolu

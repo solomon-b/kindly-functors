@@ -41,6 +41,7 @@ common common-extensions
     GeneralizedNewtypeDeriving
     ImportQualifiedPost
     InstanceSigs
+    LambdaCase
     MultiParamTypeClasses
     NoImplicitPrelude
     PolyKinds

@@ -91,14 +91,14 @@ newtype Consumer f = Consumer (f Int -> Int)
 instance CategoricalFunctor Consumer where
   type Dom Consumer = (->) ~> Op
   type Cod Consumer = (->)
-  map (Nat opnat) (Consumer c) = Consumer (\g -> c (getOp opnat g))
+  map (Nat opnat) (Consumer c) = Consumer (c . getOp opnat)
 
 newtype Endo1 f = Endo1 (f Int -> f Int)
 
 instance CategoricalFunctor Endo1 where
   type Dom Endo1 = (->) ~> Iso (->)
   type Cod Endo1 = (->)
-  map (Nat iso) (Endo1 h) = Endo1 (\g -> embed iso (h (project iso g)))
+  map (Nat iso) (Endo1 h) = Endo1 (embed iso . h . project iso)
 
 -- Observation: compare function-shaped witnesses by running them on probes.
 

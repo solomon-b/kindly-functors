@@ -1,0 +1,8 @@
+# HLint configuration for kindly-functors.
+
+# This library constructs the functor/bifunctor hierarchy from scratch, so the
+# explicit tuple maps (\(a, c) -> (f a, c)) are intentional. Data.Bifunctor's
+# first/second are the abstractions these modules generalize, and hlint flags
+# the rewrites as increasing laziness.
+- ignore: {name: Use first}
+- ignore: {name: Use second}

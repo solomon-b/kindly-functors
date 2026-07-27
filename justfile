@@ -2,6 +2,7 @@ set shell := ["bash", "-uc"]
 
 ormolu := "ormolu"
 nix_fmt := "nixpkgs-fmt"
+hlint := "hlint"
 shellcheck := "shellcheck --external-sources --source-path=SCRIPTDIR"
 
 # List available recipes
@@ -62,17 +63,33 @@ check-format-nix:
       echo "{{nix_fmt}} is not installed; skipping"
     fi
 
-# auto-format all Haskell and Nix source
-format: format-hs format-nix
+# auto-format all Haskell and Nix source, then lint Haskell with hlint
+format: format-hs format-nix lint-hs
 
-# auto-format changed Haskell source and all Nix source
-format-changed: format-hs-changed format-nix
+# auto-format changed Haskell source and all Nix source, then lint changed Haskell
+format-changed: format-hs-changed format-nix lint-hs-changed
 
 # check all Haskell and Nix formatting
 check-format: check-format-hs check-format-nix
 
 # check changed Haskell formatting and all Nix formatting
 check-format-changed: check-format-hs-changed check-format-nix
+
+# lint Haskell source code using hlint
+lint-hs:
+    @echo "running {{hlint}}"
+    @{{hlint}} $(git ls-files '*.hs')
+
+# lint changed Haskell source code using hlint
+lint-hs-changed:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    base=$(git merge-base HEAD origin/main)
+    changed=$(git diff --diff-filter=d --name-only "$base" | grep -E '\.hs$' || true)
+    if [ -n "$changed" ]; then
+      echo "running {{hlint}}"
+      {{hlint}} $changed
+    fi
 
 # lint shell scripts using shellcheck
 lint-shell:

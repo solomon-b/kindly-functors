@@ -13,6 +13,8 @@ module Kindly.Functor
     mapMaybe,
     catMaybes,
     filter,
+    FromFunctor (..),
+    FromContra (..),
   )
 where
 
@@ -178,6 +180,10 @@ filter f = map (Hask.Profunctor.Star (\a -> if f a then Just a else Nothing))
 
 --------------------------------------------------------------------------------
 
+-- | A @DerivingVia@ adapter: give any base @Functor@ a covariant
+-- 'CategoricalFunctor' instance (@Dom = (->)@, @Cod = (->)@).
+--
+-- > deriving via (FromFunctor MyType) instance CategoricalFunctor MyType
 newtype FromFunctor f a = FromFunctor (f a)
   deriving newtype (Hask.Functor)
 
@@ -697,6 +703,10 @@ deriving via (FromFunctor SCC) instance CategoricalFunctor SCC
 
 --------------------------------------------------------------------------------
 
+-- | A @DerivingVia@ adapter: give any base @Contravariant@ a contravariant
+-- 'CategoricalFunctor' instance (@Dom = Op@).
+--
+-- > deriving via (FromContra MyType) instance CategoricalFunctor MyType
 newtype FromContra f a = FromContra (f a)
   deriving newtype (Hask.Contravariant)
 

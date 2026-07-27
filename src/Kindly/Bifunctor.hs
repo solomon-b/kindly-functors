@@ -9,6 +9,8 @@ module Kindly.Bifunctor
     Iso (..),
     lmap,
     rmap,
+    FromBifunctor (..),
+    FromProfunctor (..),
   )
 where
 
@@ -89,6 +91,10 @@ rmap = bimap id
 
 --------------------------------------------------------------------------------
 
+-- | A @DerivingVia@ adapter: give any base @Bifunctor@ a 'CategoricalFunctor'
+-- instance.
+--
+-- > deriving via (FromBifunctor MyType) instance CategoricalFunctor MyType
 newtype FromBifunctor f a b = FromBifunctor (f a b)
   deriving newtype (Hask.Functor, Hask.Bifunctor)
 
@@ -192,6 +198,10 @@ instance (MapArg2 (->) (->) p) => CategoricalFunctor (WrappedBifunctor p) where
 
 --------------------------------------------------------------------------------
 
+-- | A @DerivingVia@ adapter: give any @Profunctor@ a 'CategoricalFunctor'
+-- instance.
+--
+-- > deriving via (FromProfunctor MyType) instance CategoricalFunctor MyType
 newtype FromProfunctor f a b = FromProfunctor (f a b)
   deriving newtype (Hask.Functor, Hask.Profunctor)
 
